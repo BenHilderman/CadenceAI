@@ -1,0 +1,18 @@
+app = "cadenceai-server"
+primary_region = "yyz"
+
+[build]
+
+[http_service]
+  internal_port = 7860
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[services]]
+  protocol = "udp"
+  internal_port = 7860
+
+  [[services.ports]]
+    port = 10000
