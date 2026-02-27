@@ -1,0 +1,69 @@
+#cadence-ai-orb {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  z-index: 2147483647;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  animation: cadence-morph-blob 8s ease-in-out infinite;
+}
+
+#cadence-ai-orb:hover {
+  transform: scale(1.12);
+}
+
+#cadence-ai-orb:active {
+  transform: scale(0.95);
+}
+
+.cadence-orb-glow {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(108, 92, 231, 0.3) 0%, transparent 70%);
+  filter: blur(12px);
+  pointer-events: none;
+  animation: cadence-pulse 3s ease-in-out infinite;
+}
+
+.cadence-orb-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #6c5ce7 0%, #a78bfa 50%, #7c3aed 100%);
+  box-shadow:
+    0 0 20px rgba(108, 92, 231, 0.4),
+    0 0 40px rgba(108, 92, 231, 0.15),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.2),
+    inset 0 4px 8px rgba(255, 255, 255, 0.1);
+}
+
+.cadence-orb-icon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+@keyframes cadence-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes cadence-morph-blob {
+  0%, 100% { border-radius: 52% 48% 66% 34% / 38% 64% 36% 62%; }
+  25% { border-radius: 64% 36% 52% 48% / 62% 38% 64% 36%; }
+  50% { border-radius: 58% 42% 42% 58% / 58% 69% 31% 42%; }
+  75% { border-radius: 42% 58% 58% 42% / 42% 31% 69% 58%; }
+}
