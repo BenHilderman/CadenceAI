@@ -22,6 +22,26 @@ function makeMotionComponent(tag: string) {
   });
 }
 
+function makeMotionSvgComponent(tag: string) {
+  return React.forwardRef((props: Record<string, unknown>, ref) => {
+    const {
+      initial: _i,
+      animate: _a,
+      exit: _e,
+      transition: _t,
+      variants: _v,
+      whileHover: _wh,
+      whileTap: _wt,
+      whileInView: _wi,
+      layout: _l,
+      layoutId: _li,
+      pathLength: _pl,
+      ...rest
+    } = props;
+    return React.createElement(tag, { ...rest, ref });
+  });
+}
+
 vi.mock("framer-motion", () => ({
   motion: {
     div: makeMotionComponent("div"),
@@ -40,6 +60,9 @@ vi.mock("framer-motion", () => ({
     h2: makeMotionComponent("h2"),
     h3: makeMotionComponent("h3"),
     h4: makeMotionComponent("h4"),
+    path: makeMotionSvgComponent("path"),
+    svg: makeMotionComponent("svg"),
+    circle: makeMotionSvgComponent("circle"),
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
   useSpring: () => ({ set: vi.fn(), get: vi.fn(() => 0) }),
@@ -65,9 +88,14 @@ vi.mock("lucide-react", () => ({
   RefreshCw: makeIcon("RefreshCw"),
   Mic: makeIcon("Mic"),
   ChevronDown: makeIcon("ChevronDown"),
+  ChevronLeft: makeIcon("ChevronLeft"),
+  ChevronRight: makeIcon("ChevronRight"),
   Keyboard: makeIcon("Keyboard"),
   MicOff: makeIcon("MicOff"),
   PhoneOff: makeIcon("PhoneOff"),
+  CalendarCheck: makeIcon("CalendarCheck"),
+  Video: makeIcon("Video"),
+  ExternalLink: makeIcon("ExternalLink"),
 }));
 
 // ── window.matchMedia stub ──────────────────────────────────────────
