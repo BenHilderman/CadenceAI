@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
     title: `Book a meeting with ${slug}`,
     description: `Schedule a meeting with ${slug} via CadenceAI. Pick a time, confirm, and get a Google Meet link instantly.`,
     openGraph: {
-      title: `Book a meeting with ${slug} — CadenceAI`,
+      title: `Book a meeting with ${slug} - CadenceAI`,
       description: `Schedule a meeting with ${slug}. Pick a time, confirm, and get a Google Meet link instantly.`,
       type: "website",
     },
