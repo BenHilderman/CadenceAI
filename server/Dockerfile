@@ -5,6 +5,10 @@ WORKDIR /app
 # Install system dependencies for audio processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    libxcb1 \
+    libx11-6 \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
