@@ -8,9 +8,16 @@ import type { TranscriptMessage } from "@/lib/types";
 // Bot transcript chunks arriving within this window get merged into one bubble
 const BOT_MERGE_WINDOW_MS = 2000;
 
-/** Strip noise markers from transcribed text */
+/** Strip noise markers and non-English characters from transcribed text.
+ *  Gemini's native audio STT sometimes outputs non-Latin scripts (e.g. Kannada)
+ *  for short utterances. We enforce English-only by stripping everything outside
+ *  basic ASCII letters, digits, and common punctuation. */
 function cleanText(text: string): string {
-  return text.replace(/<noise>/g, "").replace(/\s+/g, " ").trim();
+  return text
+    .replace(/<noise>/g, "")
+    .replace(/[^a-zA-Z0-9\s.,!?'''"""():;\-\/&@#$%+=%]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function useTranscript() {

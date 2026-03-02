@@ -7,7 +7,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 describe("cleanText", () => {
   // Replicate the cleanText function from useTranscript.ts
   function cleanText(text: string): string {
-    return text.replace(/<noise>/g, "").replace(/\s+/g, " ").trim();
+    return text
+      .replace(/<noise>/g, "")
+      .replace(/[^a-zA-Z0-9\s.,!?'''"""():;\-\/&@#$%+=%]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   it("strips <noise> markers", () => {
@@ -48,6 +52,42 @@ describe("cleanText", () => {
 
   it("handles multiple spaces around noise", () => {
     expect(cleanText("hello   <noise>   world")).toBe("hello world");
+  });
+
+  it("strips Kannada script characters", () => {
+    expect(cleanText("ಹಾಯ್")).toBe("");
+  });
+
+  it("strips Chinese characters", () => {
+    expect(cleanText("你好世界")).toBe("");
+  });
+
+  it("strips Arabic characters", () => {
+    expect(cleanText("مرحبا")).toBe("");
+  });
+
+  it("strips Devanagari characters", () => {
+    expect(cleanText("नमस्ते")).toBe("");
+  });
+
+  it("strips mixed non-English and English", () => {
+    expect(cleanText("hello ಹಾಯ್ world")).toBe("hello world");
+  });
+
+  it("strips emoji characters", () => {
+    expect(cleanText("hello 😀 world")).toBe("hello world");
+  });
+
+  it("preserves numbers and basic punctuation", () => {
+    expect(cleanText("Meeting at 2:30 PM, ok?")).toBe("Meeting at 2:30 PM, ok?");
+  });
+
+  it("preserves apostrophes and quotes", () => {
+    expect(cleanText("It's a \"test\" right?")).toBe("It's a \"test\" right?");
+  });
+
+  it("returns empty for purely non-Latin input", () => {
+    expect(cleanText("こんにちは")).toBe("");
   });
 });
 
