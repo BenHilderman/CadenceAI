@@ -28,6 +28,7 @@ cors_origins = [
     settings.frontend_url,
     "http://localhost:3000",
     "https://cadenceai.vercel.app",
+    "https://cadenceai-app.vercel.app",
 ]
 if settings.extension_origin:
     cors_origins.append(settings.extension_origin)
