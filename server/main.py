@@ -27,6 +27,8 @@ app = FastAPI(title="CadenceAI API")
 cors_origins = [
     settings.frontend_url,
     "http://localhost:3000",
+    "https://cadenceai.space",
+    "https://www.cadenceai.space",
     "https://cadenceai.vercel.app",
     "https://cadenceai-app.vercel.app",
 ]
