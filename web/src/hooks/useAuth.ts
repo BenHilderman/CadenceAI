@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-function getApiBase(): string {
-  const pipecatUrl = process.env.NEXT_PUBLIC_PIPECAT_URL || "http://localhost:7860/api/offer";
-  return pipecatUrl.replace(/\/api\/offer$/, "");
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -45,7 +42,7 @@ export function useAuth(): AuthState {
       const alreadyAttempted = sessionStorage.getItem("cadence_auth_attempted");
       if (!alreadyAttempted) {
         sessionStorage.setItem("cadence_auth_attempted", "1");
-        window.location.href = `${getApiBase()}/api/auth/google`;
+        window.location.href = `${API_URL}/api/auth/google`;
         return; // Don't set isLoading false — we're redirecting
       }
       setIsLoading(false);
@@ -53,7 +50,7 @@ export function useAuth(): AuthState {
     }
 
     // Verify session with backend
-    fetch(`${getApiBase()}/api/auth/me?session=${stored}`)
+    fetch(`${API_URL}/api/auth/me?session=${stored}`)
       .then((res) => {
         if (!res.ok) throw new Error("Invalid session");
         return res.json();
@@ -77,7 +74,7 @@ export function useAuth(): AuthState {
   }, []);
 
   const login = useCallback(() => {
-    window.location.href = `${getApiBase()}/api/auth/google`;
+    window.location.href = `${API_URL}/api/auth/google`;
   }, []);
 
   const logout = useCallback(() => {
