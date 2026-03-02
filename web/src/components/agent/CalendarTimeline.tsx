@@ -15,14 +15,13 @@ interface CalendarTimelineProps {
   compact?: boolean;
 }
 
-const START_HOUR = 8;
-const END_HOUR = 18;
-const TOTAL_HOURS = END_HOUR - START_HOUR;
+const DEFAULT_END_HOUR = 18;
+const SLOT_ROW_HEIGHT = 28;
+const SLOT_GAP = 2;
 
-function timeToOffset(isoOrTime: string, hourPx: number): number {
-  const d = new Date(isoOrTime);
-  const hours = d.getHours() + d.getMinutes() / 60;
-  return (hours - START_HOUR) * hourPx;
+function toDecimalHour(iso: string): number {
+  const d = new Date(iso);
+  return d.getHours() + d.getMinutes() / 60;
 }
 
 function blockHeight(start: string, end: string, hourPx: number): number {
@@ -51,12 +50,12 @@ function isToday(dateStr: string): boolean {
   );
 }
 
-function NowLine({ hourPx }: { hourPx: number }) {
+function NowLine({ startHour, hourPx }: { startHour: number; hourPx: number }) {
   const now = new Date();
   const hours = now.getHours() + now.getMinutes() / 60;
-  if (hours < START_HOUR || hours > END_HOUR) return null;
+  if (hours < startHour || hours > DEFAULT_END_HOUR) return null;
 
-  const top = (hours - START_HOUR) * hourPx;
+  const top = (hours - startHour) * hourPx;
 
   return (
     <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top }}>
@@ -77,8 +76,7 @@ export function CalendarTimeline({
   pendingSlotTime = null,
   compact = false,
 }: CalendarTimelineProps) {
-  const hourPx = compact ? 32 : 48;
-  const totalHeight = TOTAL_HOURS * hourPx;
+  const baseHourPx = compact ? 32 : 48;
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Filter out any slot whose start_time matches the booked event
@@ -88,19 +86,52 @@ export function CalendarTimeline({
   );
   const maxScore = useMemo(() => Math.max(...visibleSlots.map((s) => s.score), 1), [visibleSlots]);
 
+  // Dynamic start hour: extend grid earlier if slots exist before 8 AM
+  const startHour = useMemo(() => {
+    let earliest = 8;
+    for (const s of visibleSlots) {
+      earliest = Math.min(earliest, Math.floor(toDecimalHour(s.start_time)));
+    }
+    for (const b of busyBlocks) {
+      earliest = Math.min(earliest, Math.floor(toDecimalHour(b.start)));
+    }
+    if (bookedEvent) {
+      earliest = Math.min(earliest, Math.floor(toDecimalHour(bookedEvent.start)));
+    }
+    return earliest;
+  }, [visibleSlots, busyBlocks, bookedEvent]);
+
+  // Dynamic hourPx: scale up when slots are dense so they don't overlap.
+  // Find the smallest time gap between consecutive slots and ensure
+  // that gap in pixels >= SLOT_ROW_HEIGHT + SLOT_GAP.
+  const hourPx = useMemo(() => {
+    if (visibleSlots.length < 2) return baseHourPx;
+    const times = visibleSlots.map((s) => toDecimalHour(s.start_time)).sort((a, b) => a - b);
+    let minGapHours = Infinity;
+    for (let i = 1; i < times.length; i++) {
+      minGapHours = Math.min(minGapHours, times[i] - times[i - 1]);
+    }
+    if (minGapHours <= 0 || !isFinite(minGapHours)) return baseHourPx;
+    const requiredPx = (SLOT_ROW_HEIGHT + SLOT_GAP) / minGapHours;
+    return Math.max(baseHourPx, Math.ceil(requiredPx));
+  }, [visibleSlots, baseHourPx]);
+
+  const totalHours = DEFAULT_END_HOUR - startHour;
+  const totalHeight = totalHours * hourPx;
+
   // Scroll to first slot or current time on mount
   useEffect(() => {
     if (!scrollRef.current) return;
     const firstSlot = slots[0];
     if (firstSlot) {
-      const offset = timeToOffset(firstSlot.start_time, hourPx);
+      const offset = (toDecimalHour(firstSlot.start_time) - startHour) * hourPx;
       scrollRef.current.scrollTop = Math.max(offset - hourPx, 0);
     }
-  }, [slots, hourPx]);
+  }, [slots, hourPx, startHour]);
 
   const hours = useMemo(
-    () => Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i),
-    []
+    () => Array.from({ length: totalHours }, (_, i) => startHour + i),
+    [startHour, totalHours]
   );
 
   return (
@@ -125,7 +156,7 @@ export function CalendarTimeline({
         <div className="relative ml-12 mr-3 my-2" style={{ height: totalHeight }}>
           {/* Hour grid lines + labels */}
           {hours.map((hour) => {
-            const top = (hour - START_HOUR) * hourPx;
+            const top = (hour - startHour) * hourPx;
             const label =
               hour === 0
                 ? "12 AM"
@@ -144,12 +175,12 @@ export function CalendarTimeline({
             );
           })}
 
-          {/* Lunch zone 12–1 PM */}
-          {START_HOUR <= 12 && END_HOUR >= 13 && (
+          {/* Lunch zone 12-1 PM */}
+          {startHour <= 12 && DEFAULT_END_HOUR >= 13 && (
             <div
               className="absolute left-0 right-0 border border-dashed border-amber-500/10 bg-amber-500/[0.02] rounded"
               style={{
-                top: (12 - START_HOUR) * hourPx,
+                top: (12 - startHour) * hourPx,
                 height: hourPx,
               }}
             />
@@ -157,7 +188,7 @@ export function CalendarTimeline({
 
           {/* Busy blocks */}
           {busyBlocks.map((block, i) => {
-            const top = timeToOffset(block.start, hourPx);
+            const top = (toDecimalHour(block.start) - startHour) * hourPx;
             const height = blockHeight(block.start, block.end, hourPx);
             if (top + height < 0 || top > totalHeight) return null;
 
@@ -175,13 +206,12 @@ export function CalendarTimeline({
             );
           })}
 
-          {/* Available slots */}
+          {/* Available slots - fixed height, positioned at actual time */}
           {visibleSlots.map((slot, i) => {
-            const top = timeToOffset(slot.start_time, hourPx);
-            const height = blockHeight(slot.start_time, slot.end_time, hourPx);
+            const top = (toDecimalHour(slot.start_time) - startHour) * hourPx;
+            if (top + SLOT_ROW_HEIGHT < 0 || top > totalHeight) return null;
             const isBest = i === 0;
             const isPending = slot.start_time === pendingSlotTime;
-            if (top + height < 0 || top > totalHeight) return null;
 
             return (
               <motion.button
@@ -204,7 +234,7 @@ export function CalendarTimeline({
                         ? "bg-white/[0.08] border-white/15 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                         : "bg-white/[0.04] border-white/[0.08] cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                 }`}
-                style={{ top: Math.max(top, 0), height }}
+                style={{ top, height: SLOT_ROW_HEIGHT }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span
@@ -241,7 +271,7 @@ export function CalendarTimeline({
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="absolute left-0 right-0 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 flex items-center gap-2 overflow-hidden z-10"
               style={{
-                top: Math.max(timeToOffset(bookedEvent.start, hourPx), 0),
+                top: Math.max((toDecimalHour(bookedEvent.start) - startHour) * hourPx, 0),
                 height: blockHeight(bookedEvent.start, bookedEvent.end, hourPx),
               }}
             >
@@ -253,7 +283,7 @@ export function CalendarTimeline({
           )}
 
           {/* Now line */}
-          {isToday(date) && <NowLine hourPx={hourPx} />}
+          {isToday(date) && <NowLine startHour={startHour} hourPx={hourPx} />}
         </div>
       </div>
     </div>
