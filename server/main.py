@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
-from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
+from pipecat.transports.smallwebrtc.connection import IceServer, SmallWebRTCConnection
 from pipecat.transports.smallwebrtc.request_handler import (
     SmallWebRTCRequest,
     SmallWebRTCPatchRequest,
@@ -56,27 +56,27 @@ app.include_router(auth_router)
 turn_username = os.environ.get("TURN_USERNAME", "")
 turn_credential = os.environ.get("TURN_CREDENTIAL", "")
 ice_servers = [
-    "stun:stun.relay.metered.ca:80",
-    {
-        "urls": ["turn:global.relay.metered.ca:80"],
-        "username": turn_username,
-        "credential": turn_credential,
-    },
-    {
-        "urls": ["turn:global.relay.metered.ca:80?transport=tcp"],
-        "username": turn_username,
-        "credential": turn_credential,
-    },
-    {
-        "urls": ["turn:global.relay.metered.ca:443"],
-        "username": turn_username,
-        "credential": turn_credential,
-    },
-    {
-        "urls": ["turns:global.relay.metered.ca:443?transport=tcp"],
-        "username": turn_username,
-        "credential": turn_credential,
-    },
+    IceServer(urls="stun:stun.relay.metered.ca:80"),
+    IceServer(
+        urls="turn:global.relay.metered.ca:80",
+        username=turn_username,
+        credential=turn_credential,
+    ),
+    IceServer(
+        urls="turn:global.relay.metered.ca:80?transport=tcp",
+        username=turn_username,
+        credential=turn_credential,
+    ),
+    IceServer(
+        urls="turn:global.relay.metered.ca:443",
+        username=turn_username,
+        credential=turn_credential,
+    ),
+    IceServer(
+        urls="turns:global.relay.metered.ca:443?transport=tcp",
+        username=turn_username,
+        credential=turn_credential,
+    ),
 ]
 
 request_handler = SmallWebRTCRequestHandler(ice_servers=ice_servers)
