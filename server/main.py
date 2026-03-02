@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,9 +53,33 @@ app.include_router(chat_router)
 # Mount auth routes
 app.include_router(auth_router)
 
-request_handler = SmallWebRTCRequestHandler(
-    ice_servers=["stun:stun.l.google.com:19302"],
-)
+turn_username = os.environ.get("TURN_USERNAME", "")
+turn_credential = os.environ.get("TURN_CREDENTIAL", "")
+ice_servers = [
+    "stun:stun.relay.metered.ca:80",
+    {
+        "urls": ["turn:global.relay.metered.ca:80"],
+        "username": turn_username,
+        "credential": turn_credential,
+    },
+    {
+        "urls": ["turn:global.relay.metered.ca:80?transport=tcp"],
+        "username": turn_username,
+        "credential": turn_credential,
+    },
+    {
+        "urls": ["turn:global.relay.metered.ca:443"],
+        "username": turn_username,
+        "credential": turn_credential,
+    },
+    {
+        "urls": ["turns:global.relay.metered.ca:443?transport=tcp"],
+        "username": turn_username,
+        "credential": turn_credential,
+    },
+]
+
+request_handler = SmallWebRTCRequestHandler(ice_servers=ice_servers)
 
 
 @app.get("/api/health")
