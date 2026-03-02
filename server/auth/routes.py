@@ -1,11 +1,11 @@
 import asyncio
 import calendar
 from datetime import datetime
+from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter
 from fastapi.responses import RedirectResponse, JSONResponse
-from google_auth_oauthlib.flow import Flow
 from loguru import logger
 import requests as http_requests
 
@@ -21,44 +21,43 @@ SCOPES = [
     "openid",
 ]
 
-
-def _build_flow() -> Flow:
-    client_config = {
-        "web": {
-            "client_id": settings.google_client_id,
-            "client_secret": settings.google_client_secret,
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        }
-    }
-    flow = Flow.from_client_config(
-        client_config,
-        scopes=SCOPES,
-        redirect_uri=settings.auth_redirect_uri,
-    )
-    return flow
+GOOGLE_AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
+GOOGLE_TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
 @router.get("/google")
 async def google_login():
-    flow = _build_flow()
-    auth_url, _ = flow.authorization_url(
-        access_type="offline",
-        prompt="consent",
-        include_granted_scopes="true",
-    )
-    return RedirectResponse(auth_url)
+    params = {
+        "client_id": settings.google_client_id,
+        "redirect_uri": settings.auth_redirect_uri,
+        "response_type": "code",
+        "scope": " ".join(SCOPES),
+        "access_type": "offline",
+        "prompt": "consent",
+        "include_granted_scopes": "true",
+    }
+    return RedirectResponse(f"{GOOGLE_AUTH_URI}?{urlencode(params)}")
 
 
 @router.get("/callback")
 async def google_callback(code: str):
-    flow = _build_flow()
-    flow.fetch_token(code=code)
+    # Exchange auth code for tokens (no PKCE — server-side with client_secret)
+    token_resp = http_requests.post(
+        GOOGLE_TOKEN_URI,
+        data={
+            "code": code,
+            "client_id": settings.google_client_id,
+            "client_secret": settings.google_client_secret,
+            "redirect_uri": settings.auth_redirect_uri,
+            "grant_type": "authorization_code",
+        },
+        timeout=10,
+    )
+    token_resp.raise_for_status()
+    tokens = token_resp.json()
 
-    credentials = flow.credentials
-    access_token = credentials.token
-    refresh_token = credentials.refresh_token or ""
-    token_expiry = credentials.expiry
+    access_token = tokens["access_token"]
+    refresh_token = tokens.get("refresh_token", "")
 
     # Fetch user email from Google userinfo
     userinfo_resp = http_requests.get(
@@ -73,7 +72,7 @@ async def google_callback(code: str):
         google_email=email,
         access_token=access_token,
         refresh_token=refresh_token,
-        token_expiry=token_expiry,
+        token_expiry=None,
     )
 
     logger.info(f"OAuth complete for {email}, session created")
