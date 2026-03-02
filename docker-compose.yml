@@ -1,0 +1,23 @@
+services:
+  server:
+    build: ./server
+    ports:
+      - "7860:7860"
+    env_file: ./server/.env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_PIPECAT_URL: http://localhost:7860/api/offer
+    ports:
+      - "3000:3000"
+    depends_on:
+      server:
+        condition: service_healthy

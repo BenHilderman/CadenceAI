@@ -22,6 +22,7 @@ class SchedulingState(TypedDict, total=False):
     free_slots: list[dict]
     ranked_slots: list[dict]
     is_slot_free: bool
+    conflicting_event: dict
     # Output
     result: dict
     error: str | None

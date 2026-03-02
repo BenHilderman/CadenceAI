@@ -13,7 +13,7 @@ def build_scheduling_graph():
 
     Flows:
       check_availability: fetch_busy -> compute_slots -> rank -> END
-      create_event:       verify_free -> (book_event | return_error) -> END
+      create_event:       book_event -> END
       reschedule_event:   verify_free -> (reschedule_event | return_error) -> END
       cancel_event:       cancel_event -> END
     """

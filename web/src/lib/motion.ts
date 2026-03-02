@@ -32,14 +32,13 @@ export const stagger = {
 // --- Common variants ---
 // These cover 90% of reveal animations across the site.
 
-// Fade up from below with a subtle blur
+// Fade up from below
 export const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 30, filter: "blur(6px)" },
+  hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
-    filter: "blur(0px)",
-    transition: { duration: duration.slow, ease: ease.out },
+    transition: { duration: duration.slow, ease: ease.softOut },
   },
 };
 
@@ -58,30 +57,28 @@ export const sectionContainer: Variants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: stagger.normal,
-      delayChildren: 0.1,
+      staggerChildren: stagger.relaxed,
+      delayChildren: 0.05,
     },
   },
 };
 
 // Smaller fade-up for list items inside a staggered container
 export const itemReveal: Variants = {
-  hidden: { opacity: 0, y: 20, filter: "blur(4px)" },
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
-    filter: "blur(0px)",
-    transition: { duration: duration.normal, ease: ease.out },
+    transition: { duration: duration.normal, ease: ease.softOut },
   },
 };
 
-// Slow blur-in, no movement — for subheadings and supporting text
+// Slow fade-in, no movement — for subheadings and supporting text
 export const cinematicFade: Variants = {
-  hidden: { opacity: 0, filter: "blur(8px)" },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    filter: "blur(0px)",
-    transition: { duration: 1.0, ease: ease.softOut },
+    transition: { duration: 0.8, ease: ease.softOut },
   },
 };
 

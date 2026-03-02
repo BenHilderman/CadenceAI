@@ -1,5 +1,7 @@
 import asyncio
 import time
+from contextvars import ContextVar
+from dataclasses import dataclass
 
 from loguru import logger
 from pipecat.services.llm_service import FunctionCallParams
@@ -9,10 +11,33 @@ from graph.scheduling_graph import scheduling_graph
 from utils.audit import audit_log
 from config import settings
 
+
+@dataclass
+class UserCredentials:
+    access_token: str
+    refresh_token: str
+    client_id: str | None = None
+    client_secret: str | None = None
+    calendar_id: str = "primary"
+
+
+user_credentials_var: ContextVar[UserCredentials | None] = ContextVar(
+    "user_credentials", default=None
+)
+
 calendar_client: CalendarClient | None = None
 
 
 def get_calendar_client() -> CalendarClient:
+    creds = user_credentials_var.get(None)
+    if creds is not None:
+        return CalendarClient(
+            refresh_token=creds.refresh_token,
+            access_token=creds.access_token,
+            client_id=creds.client_id,
+            client_secret=creds.client_secret,
+            calendar_id=creds.calendar_id,
+        )
     global calendar_client
     if calendar_client is None:
         calendar_client = CalendarClient()
@@ -24,7 +49,7 @@ def _invoke_graph_with_trace(input_state: dict) -> tuple[dict, list[dict]]:
     action = input_state.get("action", "")
     node_map = {
         "check_availability": ["fetch_busy", "compute_slots", "rank"],
-        "create_event": ["verify_free", "book_event"],
+        "create_event": ["book_event"],
         "reschedule_event": ["verify_free", "reschedule_event"],
         "cancel_event": ["cancel_event"],
     }
@@ -71,8 +96,10 @@ async def _invoke_with_retry(input_state: dict) -> tuple[dict, list[dict]]:
         error_msg = str(e).lower()
         if any(keyword in error_msg for keyword in ["401", "token", "credentials", "auth", "refresh"]):
             logger.warning(f"Auth error detected, retrying with fresh credentials: {e}")
-            global calendar_client
-            calendar_client = None  # Force re-init on next use
+            # Only reset global singleton if not using per-user creds
+            if user_credentials_var.get(None) is None:
+                global calendar_client
+                calendar_client = None  # Force re-init on next use
             return await asyncio.to_thread(_invoke_graph_with_trace, input_state)
         raise
 

@@ -40,7 +40,7 @@ export function GraphVisualizer({ trace }: GraphVisualizerProps) {
       />
 
       <div className="relative flex items-center gap-2 px-5 py-3 border-b border-border">
-        <GitBranch size={12} className="text-accent-bright" />
+        <GitBranch size={12} className="text-white" />
         <span className="text-[11px] font-mono uppercase tracking-widest text-muted">
           Graph Pipeline
         </span>
@@ -65,7 +65,7 @@ export function GraphVisualizer({ trace }: GraphVisualizerProps) {
                   {node.status === "running" && (
                     <motion.div
                       className="absolute -inset-1 rounded-full"
-                      style={{ border: "1px solid rgba(139, 92, 246, 0.2)" }}
+                      style={{ border: "1px solid rgba(255, 255, 255, 0.2)" }}
                       animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.1, 0.4] }}
                       transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                     />
@@ -88,7 +88,7 @@ export function GraphVisualizer({ trace }: GraphVisualizerProps) {
                         ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
                         : node.status === "error"
                           ? "bg-red-500/10 border-red-500/25 text-red-400"
-                          : "bg-accent/10 border-accent/25 text-accent-bright glow-accent"
+                          : "bg-white/[0.06] border-white/15 text-white"
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -108,7 +108,7 @@ export function GraphVisualizer({ trace }: GraphVisualizerProps) {
                             className={`h-full rounded-full ${
                               node.status === "completed"
                                 ? "bg-emerald-400/40"
-                                : "bg-accent-bright/40"
+                                : "bg-white/40"
                             }`}
                             initial={{ width: 0 }}
                             animate={{ width: `${(node.duration_ms / maxDuration) * 100}%` }}

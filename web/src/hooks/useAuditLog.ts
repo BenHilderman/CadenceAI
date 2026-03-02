@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRTVIClientEvent } from "@pipecat-ai/client-react";
 import { RTVIEvent } from "@pipecat-ai/client-js";
-import type { AuditEntry, Slot, BookedEvent, GraphTraceNode } from "@/lib/types";
+import type { AuditEntry, Slot, BookedEvent, GraphTraceNode, BusyBlock } from "@/lib/types";
 
 interface PendingCall {
   function_name: string;
@@ -15,6 +15,7 @@ export function useAuditLog() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [bookedEvent, setBookedEvent] = useState<BookedEvent | null>(null);
   const [graphTrace, setGraphTrace] = useState<GraphTraceNode[]>([]);
+  const [busyBlocks, setBusyBlocks] = useState<BusyBlock[]>([]);
   const pendingCalls = useRef<Map<string, PendingCall>>(new Map());
 
   // Capture function name + arguments when the call starts
@@ -59,6 +60,9 @@ export function useAuditLog() {
       result.available_slots
     ) {
       setSlots(result.available_slots as Slot[]);
+      if (result.busy_times && Array.isArray(result.busy_times)) {
+        setBusyBlocks(result.busy_times as BusyBlock[]);
+      }
     }
 
     if (
@@ -70,5 +74,5 @@ export function useAuditLog() {
     }
   });
 
-  return { entries, slots, bookedEvent, graphTrace };
+  return { entries, slots, bookedEvent, graphTrace, busyBlocks };
 }

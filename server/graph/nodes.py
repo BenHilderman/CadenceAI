@@ -114,6 +114,7 @@ def rank(state: SchedulingState) -> SchedulingState:
             "time_preference": preference,
             "busy_count": len(busy_times),
             "available_slots": ranked,
+            "busy_times": busy_times,
         },
     }
 
@@ -148,8 +149,25 @@ def verify_free(state: SchedulingState) -> SchedulingState:
 
     logger.info(f"verify_free: slot {'is' if is_free else 'is NOT'} free")
     result: dict = {"is_slot_free": is_free, "busy_times": busy}
-    if not is_free and conflicting_range:
-        result["error"] = f"Conflicts with existing event at {conflicting_range}"
+    if not is_free:
+        # Fetch actual event details so the LLM can tell the user WHAT is conflicting
+        conflicting_event = {"time_range": conflicting_range}
+        try:
+            events = client.list_upcoming_events(date_str, n=20, timezone=tz)
+            for ev in events:
+                ev_start = datetime.fromisoformat(ev["start"].replace("Z", "+00:00")).replace(tzinfo=None)
+                ev_end = datetime.fromisoformat(ev["end"].replace("Z", "+00:00")).replace(tzinfo=None)
+                if start < ev_end and end > ev_start:
+                    conflicting_event["title"] = ev.get("title", "Untitled")
+                    conflicting_event["start"] = ev["start"]
+                    conflicting_event["end"] = ev["end"]
+                    break
+        except Exception as e:
+            logger.warning(f"Could not fetch conflicting event details: {e}")
+
+        event_label = conflicting_event.get("title", "an event")
+        result["error"] = f"Conflicts with '{event_label}' at {conflicting_range}"
+        result["conflicting_event"] = conflicting_event
     return result
 
 
@@ -189,14 +207,21 @@ def return_error(state: SchedulingState) -> SchedulingState:
     conflict_info = state.get("error", "")
     error_msg = f"Time slot is not available. {conflict_info}".strip()
 
+    result: dict = {
+        "success": False,
+        "error": "conflict",
+        "message": error_msg,
+        "suggestion": "Please check availability to find alternative times.",
+    }
+
+    # Pass through conflicting event details so the LLM can tell the user what's blocking
+    conflicting_event = state.get("conflicting_event")
+    if conflicting_event:
+        result["conflicting_event"] = conflicting_event
+
     return {
         "error": error_msg,
-        "result": {
-            "success": False,
-            "error": "conflict",
-            "message": error_msg,
-            "suggestion": "Please check availability to find alternative times.",
-        },
+        "result": result,
     }
 
 

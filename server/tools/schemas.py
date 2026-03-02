@@ -37,7 +37,7 @@ check_availability_schema = FunctionSchema(
 
 create_event_schema = FunctionSchema(
     name="create_event",
-    description="Create a calendar event with a Google Meet link. Only call this after confirming the time with the user.",
+    description="Create a calendar event with a Google Meet link.",
     properties={
         "title": {
             "type": "string",

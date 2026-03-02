@@ -2,15 +2,15 @@ from datetime import datetime, time
 
 
 WORK_HOURS = {
-    "start": time(8, 0),
-    "end": time(18, 0),
+    "start": time(7, 0),
+    "end": time(22, 0),
 }
 
 TIME_PREFERENCES = {
-    "morning": (time(8, 0), time(12, 0)),
+    "morning": (time(7, 0), time(12, 0)),
     "afternoon": (time(12, 0), time(17, 0)),
-    "evening": (time(17, 0), time(20, 0)),
-    "any": (time(8, 0), time(18, 0)),
+    "evening": (time(17, 0), time(22, 0)),
+    "any": (time(7, 0), time(22, 0)),
 }
 
 

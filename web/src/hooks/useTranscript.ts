@@ -1,22 +1,35 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRTVIClientEvent } from "@pipecat-ai/client-react";
 import { RTVIEvent } from "@pipecat-ai/client-js";
 import type { TranscriptMessage } from "@/lib/types";
 
+// Bot transcript chunks arriving within this window get merged into one bubble
+const BOT_MERGE_WINDOW_MS = 2000;
+
+/** Strip noise markers from transcribed text */
+function cleanText(text: string): string {
+  return text.replace(/<noise>/g, "").replace(/\s+/g, " ").trim();
+}
+
 export function useTranscript() {
   const [messages, setMessages] = useState<TranscriptMessage[]>([]);
+  const lastBotTimestampRef = useRef(0);
 
   useRTVIClientEvent(RTVIEvent.UserTranscript, (data: { text: string; final: boolean }) => {
-    if (!data.text.trim()) return;
+    const cleaned = cleanText(data.text);
+    if (!cleaned) return;
+
+    // A user message breaks the bot merge window
+    lastBotTimestampRef.current = 0;
 
     setMessages((prev) => {
       const lastMsg = prev[prev.length - 1];
       if (lastMsg && lastMsg.role === "user" && !lastMsg.final) {
         return [
           ...prev.slice(0, -1),
-          { ...lastMsg, text: data.text, final: data.final },
+          { ...lastMsg, text: cleaned, final: data.final },
         ];
       }
       return [
@@ -24,7 +37,7 @@ export function useTranscript() {
         {
           id: `user-${Date.now()}`,
           role: "user",
-          text: data.text,
+          text: cleaned,
           timestamp: Date.now(),
           final: data.final,
         },
@@ -33,18 +46,35 @@ export function useTranscript() {
   });
 
   useRTVIClientEvent(RTVIEvent.BotTranscript, (data: { text: string }) => {
-    if (!data.text.trim()) return;
+    const cleaned = cleanText(data.text);
+    if (!cleaned) return;
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `bot-${Date.now()}`,
-        role: "assistant",
-        text: data.text,
-        timestamp: Date.now(),
-        final: true,
-      },
-    ]);
+    const now = Date.now();
+    const withinWindow = now - lastBotTimestampRef.current < BOT_MERGE_WINDOW_MS;
+    lastBotTimestampRef.current = now;
+
+    setMessages((prev) => {
+      const lastMsg = prev[prev.length - 1];
+
+      // Merge into previous bot message if within the merge window
+      if (withinWindow && lastMsg && lastMsg.role === "assistant") {
+        return [
+          ...prev.slice(0, -1),
+          { ...lastMsg, text: `${lastMsg.text} ${cleaned}` },
+        ];
+      }
+
+      return [
+        ...prev,
+        {
+          id: `bot-${now}`,
+          role: "assistant",
+          text: cleaned,
+          timestamp: now,
+          final: true,
+        },
+      ];
+    });
   });
 
   const clear = useCallback(() => setMessages([]), []);

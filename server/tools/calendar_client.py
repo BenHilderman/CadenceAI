@@ -1,4 +1,6 @@
+import hashlib
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from google.auth.transport.requests import Request
 from google.auth.exceptions import RefreshError
@@ -13,18 +15,35 @@ TOKEN_URI = "https://oauth2.googleapis.com/token"
 REQUEST_TIMEOUT = 10
 
 
+def _event_request_id(title: str, start_time: str, attendees: list[str] | None = None) -> str:
+    """Deterministic request ID for Google Calendar conference dedup."""
+    key = f"{title}|{start_time}|{','.join(sorted(attendees or []))}"
+    return f"cadence-{hashlib.sha256(key.encode()).hexdigest()[:16]}"
+
+
 class CalendarClient:
-    def __init__(self):
+    def __init__(
+        self,
+        refresh_token: str | None = None,
+        access_token: str | None = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
+        calendar_id: str | None = None,
+    ):
+        self._refresh_token = refresh_token or settings.google_refresh_token
+        self._client_id = client_id or settings.google_client_id
+        self._client_secret = client_secret or settings.google_client_secret
+
         self.credentials = Credentials(
-            token=None,
-            refresh_token=settings.google_refresh_token,
+            token=access_token,
+            refresh_token=self._refresh_token,
             token_uri=TOKEN_URI,
-            client_id=settings.google_client_id,
-            client_secret=settings.google_client_secret,
+            client_id=self._client_id,
+            client_secret=self._client_secret,
         )
         self._refresh_credentials()
         self.service = build("calendar", "v3", credentials=self.credentials)
-        self.calendar_id = settings.google_calendar_id
+        self.calendar_id = calendar_id or settings.google_calendar_id
         logger.info("Google Calendar client initialized")
 
     def _refresh_credentials(self):
@@ -35,10 +54,10 @@ class CalendarClient:
             logger.error(f"Token refresh failed, attempting full re-initialization: {e}")
             self.credentials = Credentials(
                 token=None,
-                refresh_token=settings.google_refresh_token,
+                refresh_token=self._refresh_token,
                 token_uri=TOKEN_URI,
-                client_id=settings.google_client_id,
-                client_secret=settings.google_client_secret,
+                client_id=self._client_id,
+                client_secret=self._client_secret,
             )
             self.credentials.refresh(Request())
 
@@ -58,9 +77,14 @@ class CalendarClient:
         if calendar_ids:
             ids.extend(cid for cid in calendar_ids if cid not in ids)
 
+        # FreeBusy API requires RFC 3339 timestamps with timezone offset
+        zi = ZoneInfo(tz)
+        time_min = datetime.fromisoformat(f"{date}T00:00:00").replace(tzinfo=zi).isoformat()
+        time_max = datetime.fromisoformat(f"{date}T23:59:59").replace(tzinfo=zi).isoformat()
+
         body = {
-            "timeMin": f"{date}T00:00:00",
-            "timeMax": f"{date}T23:59:59",
+            "timeMin": time_min,
+            "timeMax": time_max,
             "timeZone": tz,
             "items": [{"id": cid} for cid in ids],
         }
@@ -93,9 +117,14 @@ class CalendarClient:
         if calendar_ids:
             ids.extend(cid for cid in calendar_ids if cid not in ids)
 
+        # FreeBusy API requires RFC 3339 timestamps with timezone offset
+        zi = ZoneInfo(tz)
+        time_min = datetime.fromisoformat(f"{start_date}T00:00:00").replace(tzinfo=zi).isoformat()
+        time_max = datetime.fromisoformat(f"{end_date}T23:59:59").replace(tzinfo=zi).isoformat()
+
         body = {
-            "timeMin": f"{start_date}T00:00:00",
-            "timeMax": f"{end_date}T23:59:59",
+            "timeMin": time_min,
+            "timeMax": time_max,
             "timeZone": tz,
             "items": [{"id": cid} for cid in ids],
         }
@@ -165,7 +194,7 @@ class CalendarClient:
             "end": {"dateTime": end_dt.isoformat(), "timeZone": tz},
             "conferenceData": {
                 "createRequest": {
-                    "requestId": f"cadence-{datetime.now().timestamp()}",
+                    "requestId": _event_request_id(title, start_time, attendees),
                     "conferenceSolutionKey": {"type": "hangoutsMeet"},
                 }
             },

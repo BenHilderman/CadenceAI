@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { usePipecatClient, usePipecatClientTransportState } from "@pipecat-ai/client-react";
 
-export function useVoiceAgent() {
+export function useVoiceAgent(sessionId?: string | null) {
   const client = usePipecatClient();
   const transportState = usePipecatClientTransportState();
   const [error, setError] = useState<string | null>(null);
@@ -35,13 +35,15 @@ export function useVoiceAgent() {
     if (!client) return;
     setError(null);
     try {
-      await client.connect({
-        webrtcUrl: process.env.NEXT_PUBLIC_PIPECAT_URL || "http://localhost:7860/api/offer",
-      });
+      let url = process.env.NEXT_PUBLIC_PIPECAT_URL || "http://localhost:7860/api/offer";
+      if (sessionId) {
+        url += `${url.includes("?") ? "&" : "?"}session=${sessionId}`;
+      }
+      await client.connect({ webrtcUrl: url });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Connection failed");
     }
-  }, [client]);
+  }, [client, sessionId]);
 
   const disconnect = useCallback(async () => {
     if (!client) return;

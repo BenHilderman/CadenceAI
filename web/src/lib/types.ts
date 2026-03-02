@@ -1,9 +1,15 @@
+export interface BusyBlock {
+  start: string;
+  end: string;
+}
+
 export interface Slot {
   start_time: string;
   end_time: string;
   display_time: string;
   score: number;
   reason: string;
+  date?: string;
 }
 
 export interface BookedEvent {
@@ -35,4 +41,18 @@ export interface GraphTraceNode {
   node: string;
   status: "completed" | "running" | "error";
   duration_ms: number;
+}
+
+export interface MonthEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  all_day: boolean;
+}
+
+export interface MonthCalendarData {
+  year: number;
+  month: number;
+  events_by_date: Record<string, MonthEvent[]>;
 }

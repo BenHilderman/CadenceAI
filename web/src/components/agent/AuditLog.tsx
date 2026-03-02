@@ -10,7 +10,7 @@ interface AuditLogProps {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  check_availability: "text-accent-bright",
+  check_availability: "text-white",
   create_event: "text-emerald-400",
 };
 

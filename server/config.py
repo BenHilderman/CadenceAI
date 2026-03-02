@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     google_calendar_id: str = "primary"
     default_timezone: str = "America/Toronto"
     frontend_url: str = "http://localhost:3000"
+    auth_redirect_uri: str = "http://localhost:7860/api/auth/callback"
 
     # Slack integration (optional)
     slack_bot_token: str = ""

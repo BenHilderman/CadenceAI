@@ -17,7 +17,7 @@ interface BookingConfirmationProps {
 
 function ConfettiParticle({ index }: { index: number }) {
   const style = useMemo(() => {
-    const colors = ["#34d399", "#6c5ce7", "#a78bfa", "#fbbf24", "#f472b6", "#38bdf8"];
+    const colors = ["#34d399", "#ff3b3b", "#3bff6e", "#3b8bff", "#fbbf24", "#38bdf8"];
     const color = colors[index % colors.length];
     const xOffset = (Math.random() - 0.5) * 200;
     const delay = Math.random() * 0.4;
@@ -81,7 +81,7 @@ export function BookingConfirmation({ event }: BookingConfirmationProps) {
         className="relative rounded-2xl p-6 border border-emerald-500/20 glow-emerald overflow-hidden"
         style={{
           background:
-            "linear-gradient(135deg, rgba(52, 211, 153, 0.08) 0%, rgba(108, 92, 231, 0.04) 100%)",
+            "linear-gradient(135deg, rgba(52, 211, 153, 0.08) 0%, rgba(10, 10, 14, 0.04) 100%)",
         }}
       >
         {/* Confetti */}
@@ -127,7 +127,7 @@ export function BookingConfirmation({ event }: BookingConfirmationProps) {
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="focus-ring w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-full bg-accent/15 border border-accent/20 px-5 py-2.5 text-xs font-semibold text-accent-bright hover:bg-accent/25 transition-colors"
+                className="focus-ring w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-full bg-white/[0.08] border border-white/15 px-5 py-2.5 text-xs font-semibold text-white hover:bg-white/15 transition-colors"
               >
                 <Video size={13} />
                 Join Google Meet
@@ -140,7 +140,7 @@ export function BookingConfirmation({ event }: BookingConfirmationProps) {
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="focus-ring w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-full bg-surface-raised border border-border px-5 py-2.5 text-xs font-medium text-muted hover:text-foreground hover:border-accent/20 transition-colors"
+                className="focus-ring w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-full bg-surface-raised border border-border px-5 py-2.5 text-xs font-medium text-muted hover:text-foreground hover:border-white/15 transition-colors"
               >
                 <ExternalLink size={13} />
                 View in Calendar

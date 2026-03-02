@@ -74,7 +74,7 @@ export function BookingPage({ slug }: BookingPageProps) {
           <p className="text-muted mb-6">This booking page doesn&apos;t exist.</p>
           <Link
             href="/"
-            className="text-accent-bright hover:text-foreground transition-colors text-sm"
+            className="text-white hover:text-foreground transition-colors text-sm"
           >
             Go home
           </Link>
@@ -95,7 +95,7 @@ export function BookingPage({ slug }: BookingPageProps) {
           width: 1000,
           height: 1000,
           background:
-            "radial-gradient(circle, rgba(139, 92, 246, 0.04) 0%, transparent 55%)",
+            "radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 55%)",
         }}
       />
 
@@ -108,7 +108,7 @@ export function BookingPage({ slug }: BookingPageProps) {
           >
             <ArrowLeft size={16} />
           </Link>
-          <span className="text-xs font-mono font-semibold tracking-[0.2em] text-accent-bright uppercase">
+          <span className="text-xs font-mono font-semibold tracking-[0.2em] text-white uppercase">
             CadenceAI
           </span>
         </div>
@@ -118,7 +118,7 @@ export function BookingPage({ slug }: BookingPageProps) {
             Book a Meeting
           </span>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       </header>
 
       {/* Content */}
@@ -144,13 +144,13 @@ export function BookingPage({ slug }: BookingPageProps) {
               <div
                 className="absolute inset-0 rounded-full pointer-events-none"
                 style={{
-                  background: "radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%)",
+                  background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)",
                   filter: "blur(16px)",
                   transform: "scale(2.5)",
                 }}
               />
-              <div className="relative w-14 h-14 rounded-full bg-accent/12 border border-accent/15 flex items-center justify-center glow-accent">
-                <span className="text-xl font-bold text-accent-bright">
+              <div className="relative w-14 h-14 rounded-full bg-white/10 border border-white/15 flex items-center justify-center glow-accent">
+                <span className="text-xl font-bold text-white">
                   {profile.name.charAt(0)}
                 </span>
               </div>
@@ -166,7 +166,7 @@ export function BookingPage({ slug }: BookingPageProps) {
                   key={s}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     s === step
-                      ? "w-6 bg-accent"
+                      ? "w-6 bg-white"
                       : "w-1.5 bg-border"
                   }`}
                 />

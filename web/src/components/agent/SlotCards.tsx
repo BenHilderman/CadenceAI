@@ -16,7 +16,7 @@ export function SlotCards({ slots }: SlotCardsProps) {
   return (
     <div className="flex flex-col">
       <div className="flex items-center gap-2 px-5 py-3 border-b border-border">
-        <Clock size={12} className="text-accent-bright" />
+        <Clock size={12} className="text-white" />
         <span className="text-[11px] font-mono uppercase tracking-widest text-muted">
           Available Slots
         </span>
@@ -31,7 +31,7 @@ export function SlotCards({ slots }: SlotCardsProps) {
               transition={{ duration: 0.3, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
               className={`relative rounded-xl p-4 border transition-all overflow-hidden ${
                 i === 0
-                  ? "bg-accent/8 border-accent/15 glow-accent"
+                  ? "bg-white/[0.06] border-white/10"
                   : "bg-surface-raised border-border"
               }`}
             >
@@ -53,11 +53,11 @@ export function SlotCards({ slots }: SlotCardsProps) {
 
               <div className="relative">
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`text-base font-semibold ${i === 0 ? "text-accent-bright" : "text-foreground"}`}>
+                  <span className={`text-base font-semibold ${i === 0 ? "text-white" : "text-foreground"}`}>
                     {slot.display_time}
                   </span>
                   {i === 0 && (
-                    <span className="relative text-[10px] font-mono uppercase tracking-wider text-accent-bright bg-accent/15 px-2 py-0.5 rounded-full overflow-hidden">
+                    <span className="relative text-[10px] font-mono uppercase tracking-wider text-white bg-white/10 px-2 py-0.5 rounded-full overflow-hidden">
                       Best
                       <span
                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
@@ -73,7 +73,7 @@ export function SlotCards({ slots }: SlotCardsProps) {
                   <motion.div
                     className={`h-full rounded-full ${
                       i === 0
-                        ? "bg-gradient-to-r from-accent to-accent-bright"
+                        ? "bg-gradient-to-r from-white/60 to-white"
                         : "bg-muted/40"
                     }`}
                     initial={{ width: 0 }}

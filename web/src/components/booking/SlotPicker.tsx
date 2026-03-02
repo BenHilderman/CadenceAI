@@ -125,8 +125,8 @@ export function SlotPicker({
               aria-pressed={d === duration}
               className={`focus-ring px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 d === duration
-                  ? "bg-accent text-white glow-accent"
-                  : "bg-surface-raised border border-border text-muted hover:text-foreground hover:border-accent/30"
+                  ? "bg-white/15 text-white glow-accent"
+                  : "bg-surface-raised border border-border text-muted hover:text-foreground hover:border-white/20"
               }`}
             >
               {d} min
@@ -162,8 +162,8 @@ export function SlotPicker({
                   whileTap={{ scale: 0.96 }}
                   className={`focus-ring flex-1 min-w-0 py-2 px-1 rounded-lg text-center transition-all ${
                     isSelected
-                      ? "bg-accent/15 border border-accent/30 text-accent-bright"
-                      : "bg-surface-raised border border-border text-muted hover:text-foreground hover:border-accent/20"
+                      ? "bg-white/10 border border-white/20 text-white"
+                      : "bg-surface-raised border border-border text-muted hover:text-foreground hover:border-white/15"
                   }`}
                 >
                   <div className="text-[10px] font-mono uppercase truncate">
@@ -238,7 +238,7 @@ export function SlotPicker({
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.96 }}
                     onClick={() => onSlotSelect(slot)}
-                    className="focus-ring relative py-3 px-2 rounded-xl bg-surface-raised border border-border text-sm font-medium text-foreground hover:border-accent/40 hover:bg-accent/8 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] transition-all group overflow-hidden"
+                    className="focus-ring relative py-3 px-2 rounded-xl bg-surface-raised border border-border text-sm font-medium text-foreground hover:border-white/25 hover:bg-white/[0.06] hover:shadow-[0_0_20px_rgba(255,255,255,0.08)] transition-all group overflow-hidden"
                   >
                     {/* Shimmer on hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

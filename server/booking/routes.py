@@ -1,4 +1,5 @@
 import asyncio
+import time
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query
@@ -8,6 +9,10 @@ from pydantic import BaseModel, EmailStr
 from config import settings
 from graph.scheduling_graph import scheduling_graph
 from utils.audit import audit_log
+
+# In-memory dedup: key → timestamp, 60s window
+_recent_bookings: dict[str, float] = {}
+DEDUP_WINDOW_S = 60
 
 router = APIRouter(prefix="/api/booking", tags=["booking"])
 
@@ -138,6 +143,17 @@ async def get_available_slots(
 @router.post("/create", response_model=BookingCreateResponse)
 async def create_booking(req: BookingCreateRequest):
     _validate_slug(req.slug)
+
+    # Dedup check — prevent duplicate bookings within 60s window
+    dedup_key = f"{req.slug}|{req.start_time}|{req.guest_email}"
+    now = time.time()
+    if dedup_key in _recent_bookings and (now - _recent_bookings[dedup_key]) < DEDUP_WINDOW_S:
+        raise HTTPException(status_code=409, detail="Duplicate booking detected. Please wait before retrying.")
+    # Prune expired entries
+    expired = [k for k, v in _recent_bookings.items() if (now - v) >= DEDUP_WINDOW_S]
+    for k in expired:
+        del _recent_bookings[k]
+    _recent_bookings[dedup_key] = now
 
     logger.info(f"Booking create: slug={req.slug}, time={req.start_time}, guest={req.guest_email}")
 

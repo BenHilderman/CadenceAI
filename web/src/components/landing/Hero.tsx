@@ -10,22 +10,20 @@ import { VoiceOrb } from "@/components/agent/VoiceOrb";
 import { VoiceWaveform } from "./VoiceWaveform";
 import {
   ease,
-  duration,
-  cinematicFade,
   sectionContainer,
   itemReveal,
 } from "@/lib/motion";
 
 // The heading renders as: "Schedule by speaking."
-// "Schedule" and "by" get the white-to-lavender gradient,
-// "speaking." gets a separate animated purple-pink gradient.
+// "Schedule" and "by" get the white gradient,
+// "speaking." gets a separate animated RGB gradient.
 const headingWords = ["Schedule", "by"];
 
 export function Hero() {
   return (
     <section className="relative flex flex-col items-center justify-center text-center px-6 min-h-screen">
 
-      {/* Soft purple radial glow centered behind the orb */}
+      {/* Soft radial glow centered behind the orb */}
       <div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
@@ -33,7 +31,7 @@ export function Hero() {
           transform: "translate(-50%, -50%)",
           width: 900,
           height: 700,
-          background: "radial-gradient(ellipse, rgba(139,92,246,0.10) 0%, transparent 65%)",
+          background: "radial-gradient(ellipse, rgba(255,255,255,0.04) 0%, transparent 65%)",
         }}
       />
 
@@ -76,34 +74,33 @@ export function Hero() {
             </motion.span>
           ))}
 
-          {/* "speaking." — animated violet-to-pink gradient with glow */}
+          {/* "speaking." — animated RGB gradient with glow */}
           <motion.span
             variants={itemReveal}
             className="inline-block pb-3"
             style={{
-              background: "linear-gradient(135deg, #a78bfa 0%, #c084fc 25%, #e879f9 50%, #c084fc 75%, #a78bfa 100%)",
+              background: "linear-gradient(135deg, #ff3b3b 0%, #3bff6e 25%, #3b8bff 50%, #ff3b3b 75%, #3bff6e 100%)",
               backgroundSize: "200% 100%",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               WebkitTextFillColor: "transparent",
               animation: "gradient-shift 4s ease-in-out infinite",
-              filter: "drop-shadow(0 0 30px rgba(192, 132, 252, 0.35)) drop-shadow(0 0 60px rgba(139, 92, 246, 0.2))",
+              filter: "drop-shadow(0 0 30px rgba(59, 139, 255, 0.35)) drop-shadow(0 0 60px rgba(59, 255, 110, 0.2))",
             }}
           >
             speaking.
           </motion.span>
         </motion.h1>
 
-        {/* Subheading — slow blur-in after the heading lands */}
+        {/* Subheading */}
         <motion.p
-          variants={cinematicFade}
-          initial="hidden"
-          animate="visible"
-          transition={{ delay: 0.7 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7, duration: 0.8, ease: ease.softOut }}
           className="text-lg sm:text-xl max-w-lg mx-auto mb-12 leading-relaxed tracking-[-0.01em]"
           style={{
-            color: "#b0abca",
-            textShadow: "0 0 30px rgba(139, 92, 246, 0.1)",
+            color: "#9a9aa8",
+            textShadow: "0 0 30px rgba(255, 255, 255, 0.06)",
           }}
         >
           AI that checks your calendar and books meetings.{" "}
@@ -112,79 +109,64 @@ export function Hero() {
 
         {/* CTA buttons */}
         <motion.div
-          initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ delay: 0.65, duration: duration.normal, ease: ease.out }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65, duration: 0.6, ease: ease.softOut }}
           className="flex flex-col items-center gap-3"
         >
-          {/* Primary button — floats gently, lifts + scales on hover */}
-          <motion.div
-            whileHover={{ y: -2, scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            animate={{ y: [0, -3, 0] }}
-            transition={{
-              y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+          <div
+            className="rounded-full p-[1px]"
+            style={{
+              background: "conic-gradient(from 180deg, rgba(255,255,255,0.3), rgba(255,255,255,0.08) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, rgba(255,255,255,0.3))",
             }}
           >
-            {/* Conic gradient border — brighter at top, subtle at sides */}
-            <div
-              className="rounded-full p-[1px]"
+            <Link
+              href="/demo"
+              className="group relative flex items-center gap-2.5 rounded-full px-10 py-4 text-[15px] font-semibold tracking-[0.03em] text-white btn-shimmer transition-all duration-300 hover:scale-[1.03] active:scale-[0.97]"
               style={{
-                background: "conic-gradient(from 180deg, rgba(255,255,255,0.3), rgba(139,92,246,0.1) 25%, rgba(139,92,246,0.1) 50%, rgba(139,92,246,0.1) 75%, rgba(255,255,255,0.3))",
+                background: "linear-gradient(180deg, #3a3a42 0%, #2a2a30 50%, #1a1a20 100%)",
+                textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.3), 0 0 24px rgba(255,255,255,0.2), 0 0 60px rgba(255,255,255,0.08)",
               }}
             >
-              <Link
-                href="/demo"
-                className="group relative flex items-center gap-2.5 rounded-full px-10 py-4 text-[15px] font-semibold tracking-[0.03em] text-white btn-alive btn-shimmer"
-                style={{
-                  background: "linear-gradient(180deg, #a855f7 0%, #7c3aed 50%, #6d28d9 100%)",
-                  textShadow: "0 1px 2px rgba(0,0,0,0.4)",
-                }}
-              >
-                Try the demo
-                <ArrowRight
-                  size={16}
-                  className="group-hover:translate-x-1 transition-transform duration-200"
-                />
-              </Link>
-            </div>
-          </motion.div>
+              Try the demo
+              <ArrowRight
+                size={16}
+                className="group-hover:translate-x-1 transition-transform duration-300"
+              />
+            </Link>
+          </div>
 
-          {/* Secondary link — fades in slightly after the button */}
           <motion.div
-            variants={cinematicFade}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: 0.85 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9, duration: 0.6 }}
           >
             <Link
               href="/book/demo"
-              className="group/link flex items-center gap-1.5 text-sm hover:text-accent-bright transition-colors duration-300 link-underline"
-              style={{ color: "#b0abca" }}
+              className="group/link flex items-center gap-1.5 text-sm hover:text-white transition-colors duration-300 link-underline"
+              style={{ color: "#9a9aa8" }}
             >
               or book a meeting
               <ArrowRight
                 size={13}
-                className="opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-200"
+                className="opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-300"
               />
             </Link>
           </motion.div>
         </motion.div>
       </div>
 
-      {/* Bouncing chevron hinting the user can scroll */}
+      {/* Scroll hint chevron */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.2 }}
+        transition={{ delay: 1.2, duration: 0.8 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2"
       >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        >
+        <div className="animate-float-slow">
           <ChevronDown size={20} className="text-muted/40" />
-        </motion.div>
+        </div>
       </motion.div>
     </section>
   );

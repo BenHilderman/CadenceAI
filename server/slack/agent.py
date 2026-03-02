@@ -44,8 +44,8 @@ SCHEDULING_TOOLS = [
                     type=genai.protos.Type.OBJECT,
                     properties={
                         "start_time": genai.protos.Schema(type=genai.protos.Type.STRING, description="Start time in ISO 8601 format"),
-                        "title": genai.protos.Schema(type=genai.protos.Type.STRING, description="Meeting title"),
-                        "duration_minutes": genai.protos.Schema(type=genai.protos.Type.INTEGER, description="Duration in minutes (default 30)"),
+                        "title": genai.protos.Schema(type=genai.protos.Type.STRING, description="Meeting title. Default 'Meeting'."),
+                        "duration_minutes": genai.protos.Schema(type=genai.protos.Type.INTEGER, description="Duration in minutes. Default 30."),
                         "attendees": genai.protos.Schema(
                             type=genai.protos.Type.ARRAY,
                             items=genai.protos.Schema(type=genai.protos.Type.STRING),

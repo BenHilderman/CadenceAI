@@ -119,7 +119,7 @@ function spawnShootingStar(w: number, h: number): ShootingStar {
   };
 }
 
-export default function StarField({ starCount = 500 }: StarFieldProps) {
+export default function StarField({ starCount = 120 }: StarFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<Star[]>([]);
   const shootingRef = useRef<ShootingStar[]>([]);
@@ -148,37 +148,6 @@ export default function StarField({ starCount = 500 }: StarFieldProps) {
 
         const { r, g, b } = star.color;
 
-        // Glow halo (soft, large, very low opacity)
-        if (star.hasGlow) {
-          const glowR = star.radius * (star.hasDiffraction ? 8 : 5);
-          const grad = ctx.createRadialGradient(px, py, star.radius * 0.3, px, py, glowR);
-          // Tint the glow with a subtle purple shift for CadenceAI brand
-          const pr = Math.round(r * 0.7 + 139 * 0.3); // blend toward purple
-          const pg = Math.round(g * 0.5 + 92 * 0.5);
-          const pb = Math.round(b * 0.6 + 246 * 0.4);
-          grad.addColorStop(0, `rgba(${pr}, ${pg}, ${pb}, ${alpha * 0.12})`);
-          grad.addColorStop(0.5, `rgba(${pr}, ${pg}, ${pb}, ${alpha * 0.03})`);
-          grad.addColorStop(1, `rgba(${pr}, ${pg}, ${pb}, 0)`);
-          ctx.beginPath();
-          ctx.arc(px, py, glowR, 0, Math.PI * 2);
-          ctx.fillStyle = grad;
-          ctx.fill();
-        }
-
-        // Diffraction spikes (subtle cross on brightest stars)
-        if (star.hasDiffraction) {
-          const spikeLen = star.radius * 6;
-          const spikeAlpha = alpha * 0.1;
-          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${spikeAlpha})`;
-          ctx.lineWidth = 0.3;
-          ctx.beginPath();
-          ctx.moveTo(px - spikeLen, py);
-          ctx.lineTo(px + spikeLen, py);
-          ctx.moveTo(px, py - spikeLen);
-          ctx.lineTo(px, py + spikeLen);
-          ctx.stroke();
-        }
-
         // Star core
         ctx.beginPath();
         ctx.arc(px, py, star.radius, 0, Math.PI * 2);
@@ -189,31 +158,23 @@ export default function StarField({ starCount = 500 }: StarFieldProps) {
       // Shooting stars
       for (const s of shootingRef.current) {
         const progress = s.life / s.maxLife;
-        // Fade in fast, hold, fade out
         const fade = progress < 0.1 ? progress / 0.1
           : progress > 0.6 ? 1 - ((progress - 0.6) / 0.4)
           : 1;
         const a = fade * s.brightness;
 
-        // Trail
         const tailLen = 40 + progress * 60;
-        const dx = -s.vx / Math.sqrt(s.vx * s.vx + s.vy * s.vy) * tailLen;
-        const dy = -s.vy / Math.sqrt(s.vx * s.vx + s.vy * s.vy) * tailLen;
-
-        const grad = ctx.createLinearGradient(s.x, s.y, s.x + dx, s.y + dy);
-        // Head: white, Trail: purple-tinted
-        grad.addColorStop(0, `rgba(220, 210, 255, ${a * 0.9})`);
-        grad.addColorStop(0.3, `rgba(167, 139, 250, ${a * 0.5})`);
-        grad.addColorStop(1, `rgba(139, 92, 246, 0)`);
+        const mag = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+        const dx = -s.vx / mag * tailLen;
+        const dy = -s.vy / mag * tailLen;
 
         ctx.beginPath();
         ctx.moveTo(s.x, s.y);
         ctx.lineTo(s.x + dx, s.y + dy);
-        ctx.strokeStyle = grad;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${a * 0.5})`;
         ctx.lineWidth = s.width;
         ctx.stroke();
 
-        // Bright head
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.width * 0.8, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255, 255, 255, ${a * 0.8})`;
@@ -278,7 +239,7 @@ export default function StarField({ starCount = 500 }: StarFieldProps) {
     if (!ctx) return;
 
     const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const w = window.innerWidth;
       const h = window.innerHeight;
       canvas.width = w * dpr;
@@ -320,7 +281,7 @@ export default function StarField({ starCount = 500 }: StarFieldProps) {
   return (
     <canvas
       ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-0"
+      className="pointer-events-none fixed inset-0 z-0 will-change-transform"
       aria-hidden="true"
     />
   );

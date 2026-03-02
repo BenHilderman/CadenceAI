@@ -27,7 +27,7 @@ interface BookingFormProps {
 }
 
 const inputClasses =
-  "w-full rounded-xl bg-surface-raised/80 backdrop-blur-sm border border-border px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors";
+  "w-full rounded-xl bg-surface-raised/80 backdrop-blur-sm border border-border px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors";
 
 export function BookingForm({
   slug,
@@ -106,14 +106,14 @@ export function BookingForm({
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl bg-accent/8 border border-accent/20 p-4 animate-connect-glow"
+        className="rounded-xl bg-white/[0.06] border border-white/15 p-4 animate-connect-glow"
       >
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-accent-bright">
+          <div className="flex items-center gap-1.5 text-white">
             <Calendar size={14} />
             <span className="text-sm font-medium">{dateStr}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-accent-bright">
+          <div className="flex items-center gap-1.5 text-white">
             <Clock size={14} />
             <span className="text-sm font-medium">
               {timeStr} · {duration} min
@@ -184,7 +184,7 @@ export function BookingForm({
           disabled={submitting || !name.trim() || !email.trim()}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
-          className="focus-ring w-full rounded-xl bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3.5 text-sm font-semibold text-white transition-all glow-accent-strong flex items-center justify-center gap-2"
+          className="focus-ring w-full rounded-xl bg-white/15 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3.5 text-sm font-semibold text-white transition-all glow-accent-strong flex items-center justify-center gap-2"
         >
           {submitting ? (
             <>
