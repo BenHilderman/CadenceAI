@@ -11,11 +11,7 @@ interface ChatApiResponse {
   busy_times: BusyBlock[] | null;
 }
 
-function getApiBase(): string {
-  const pipecatUrl = process.env.NEXT_PUBLIC_PIPECAT_URL || "http://localhost:7860/api/offer";
-  // Derive base from pipecat URL: strip /api/offer to get server origin
-  return pipecatUrl.replace(/\/api\/offer$/, "");
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860";
 
 export function useTextChat(authSessionId?: string | null) {
   const [messages, setMessages] = useState<TranscriptMessage[]>([]);
@@ -45,8 +41,8 @@ export function useTextChat(authSessionId?: string | null) {
 
     try {
       const chatUrl = authSessionId
-        ? `${getApiBase()}/api/chat?session=${authSessionId}`
-        : `${getApiBase()}/api/chat`;
+        ? `${API_URL}/api/chat?session=${authSessionId}`
+        : `${API_URL}/api/chat`;
       const res = await fetch(chatUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

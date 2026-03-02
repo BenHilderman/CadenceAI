@@ -3,11 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { MonthCalendarData } from "@/lib/types";
 
-function getApiBase(): string {
-  const pipecatUrl =
-    process.env.NEXT_PUBLIC_PIPECAT_URL || "http://localhost:7860/api/offer";
-  return pipecatUrl.replace(/\/api\/offer$/, "");
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860";
 
 export function useMonthCalendar(sessionId: string | null) {
   const now = new Date();
@@ -25,7 +21,7 @@ export function useMonthCalendar(sessionId: string | null) {
     setError(null);
 
     fetch(
-      `${getApiBase()}/api/auth/calendar/month?session=${sessionId}&year=${year}&month=${month}`
+      `${API_URL}/api/auth/calendar/month?session=${sessionId}&year=${year}&month=${month}`
     )
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load calendar");
