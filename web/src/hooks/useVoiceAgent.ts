@@ -35,7 +35,8 @@ export function useVoiceAgent(sessionId?: string | null) {
     if (!client) return;
     setError(null);
     try {
-      let url = process.env.NEXT_PUBLIC_PIPECAT_URL || "http://localhost:7860/api/offer";
+      let url = process.env.NEXT_PUBLIC_PIPECAT_URL
+        || `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860"}/api/offer`;
       if (sessionId) {
         url += `${url.includes("?") ? "&" : "?"}session=${sessionId}`;
       }
