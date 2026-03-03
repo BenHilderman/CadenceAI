@@ -177,7 +177,7 @@ export function VoiceAgent() {
 
       {/* Orb — dead center */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-        <VoiceOrb state={orbState} size="large" onClick={connect} showClickHint={textMessages.length === 0} />
+        <VoiceOrb state={orbState} size="large" onClick={connect} showClickHint={textMessages.length === 0} hideLabel={orbState === "idle" && textMessages.length === 0} />
       </div>
 
       {/* LiveCaptions — centered below orb */}
@@ -236,19 +236,9 @@ export function VoiceAgent() {
           )}
         </AnimatePresence>
 
-        {entries.length > 0 && (
-          <div className="flex-1 min-h-0 glass-hud overflow-hidden rounded-2xl">
-            <AuditLog entries={entries} />
-          </div>
-        )}
       </div>
 
-      {/* Mobile MonthCalendar — always visible on small screens when no scheduling data */}
-      {!hasCalendar && (
-        <div className="lg:hidden absolute left-4 right-4 top-16 z-20 glass-hud rounded-2xl overflow-hidden max-h-[45vh] overflow-y-auto">
-          <MonthCalendar sessionId={sessionId} compact bookedEvent={bookedEvent} />
-        </div>
-      )}
+      {/* MonthCalendar is desktop-only (lg:) — hidden on mobile to avoid overlapping the voice orb */}
 
       {/* Mobile CalendarTimeline — visible below orb on small screens */}
       <AnimatePresence>
