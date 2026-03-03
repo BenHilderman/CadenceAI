@@ -10,9 +10,8 @@ def route_action(state: SchedulingState) -> str:
         return "verify_free"
     if action == "cancel_event":
         return "cancel_event"
-    # create_event: skip verify_free, book directly (Google Calendar allows
-    # overlapping events, and book_event handles 409 conflicts already).
-    return "book_event"
+    # create_event: verify the slot is free before booking
+    return "verify_free"
 
 
 def check_verification(state: SchedulingState) -> str:
