@@ -202,9 +202,9 @@ export function VoiceAgent() {
           <MonthCalendar sessionId={sessionId} bookedEvent={bookedEvent} />
         </div>
 
-        {/* Scheduling content — appears when available */}
+        {/* Scheduling content — appears when available, hides after booking */}
         <AnimatePresence>
-          {hasCalendar && calendarDate && (
+          {hasCalendar && calendarDate && !bookedEvent && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -240,9 +240,9 @@ export function VoiceAgent() {
 
       {/* MonthCalendar is desktop-only (lg:) — hidden on mobile to avoid overlapping the voice orb */}
 
-      {/* Mobile CalendarTimeline — visible below orb on small screens */}
+      {/* Mobile CalendarTimeline — visible below orb on small screens, hides after booking */}
       <AnimatePresence>
-        {hasCalendar && calendarDate && (
+        {hasCalendar && calendarDate && !bookedEvent && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -310,21 +310,6 @@ export function VoiceAgent() {
           ) : null}
         </AnimatePresence>
       </div>
-
-      {/* GraphVisualizer — above bottom controls */}
-      <AnimatePresence>
-        {graphTrace.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={{ duration: 0.3 }}
-            className="absolute bottom-20 left-1/2 -translate-x-1/2 max-w-lg w-full z-20 px-4"
-          >
-            <GraphVisualizer trace={graphTrace} />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Hidden Pipecat VoiceVisualizers — SDK needs these rendered */}
       <div className="sr-only" aria-hidden="true">
