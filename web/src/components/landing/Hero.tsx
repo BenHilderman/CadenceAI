@@ -137,23 +137,6 @@ export function Hero() {
             </Link>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.9, duration: 0.6 }}
-          >
-            <Link
-              href="/book/demo"
-              className="group/link flex items-center gap-1.5 text-sm hover:text-white transition-colors duration-300 link-underline"
-              style={{ color: "#9a9aa8" }}
-            >
-              or book a meeting
-              <ArrowRight
-                size={13}
-                className="opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-300"
-              />
-            </Link>
-          </motion.div>
         </motion.div>
       </div>
 
