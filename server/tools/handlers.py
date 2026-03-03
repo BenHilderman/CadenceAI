@@ -49,7 +49,7 @@ def _invoke_graph_with_trace(input_state: dict) -> tuple[dict, list[dict]]:
     action = input_state.get("action", "")
     node_map = {
         "check_availability": ["fetch_busy", "compute_slots", "rank"],
-        "create_event": ["verify_free", "book_event"],
+        "create_event": ["book_event"],
         "reschedule_event": ["verify_free", "reschedule_event"],
         "cancel_event": ["cancel_event"],
     }

@@ -10,8 +10,9 @@ def route_action(state: SchedulingState) -> str:
         return "verify_free"
     if action == "cancel_event":
         return "cancel_event"
-    # create_event: verify the slot is free before booking
-    return "verify_free"
+    # create_event: book directly (conflicts are caught proactively via
+    # check_availability in the system prompt before create_event is called).
+    return "book_event"
 
 
 def check_verification(state: SchedulingState) -> str:
