@@ -14,7 +14,7 @@ Voice AI scheduling assistant powered by Gemini Live speech-to-speech, LangGraph
 
 ## Home
 
-**Live**: [https://web-amber-ten-59.vercel.app/demo](https://web-amber-ten-59.vercel.app/demo)
+**Live**: [https://cadenceai.space](https://cadenceai.space) (landing page)
 
 ### How to Test
 
@@ -93,8 +93,47 @@ Flow: `check_availability → fetch_busy → compute_slots → rank → confirm 
 ![Connect to Google Calendar Page](screenshots/03-demo-page.png)
 
 ### Booking Meeting To Calendar Demo
-<!-- Replace with your Loom link after recording -->
-[Watch the full walkthrough on Loom](TODO)
+[Watch the full walkthrough on Loom](https://www.loom.com/share/3c18650f22c74fa394f5dd514271e187)
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                        Frontend                              │
+│  Next.js 16 · React 19 · Framer Motion · Zustand            │
+│                                                              │
+│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────┐ │
+│  │  VoiceAgent  │  │  TextChat    │  │  BookingPage        │ │
+│  │  (WebRTC)    │  │  (REST)      │  │  (Public Link)      │ │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬──────────┘ │
+└─────────┼─────────────────┼─────────────────────┼────────────┘
+          │                 │                     │
+          ▼                 ▼                     ▼
+┌──────────────────────────────────────────────────────────────┐
+│                     FastAPI Server                           │
+│                                                              │
+│  ┌────────────┐  ┌────────────┐  ┌────────────────────────┐ │
+│  │  Pipecat    │  │  /api/chat │  │  /api/booking/*       │ │
+│  │  Voice Bot  │  │  Gemini    │  │  Slots · Create       │ │
+│  │  (WebRTC)   │  │  Function  │  │  Profile · Dedup      │ │
+│  └──────┬──────┘  │  Calling   │  └───────────┬───────────┘ │
+│         │         └──────┬─────┘              │             │
+│         ▼                ▼                    ▼             │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │              LangGraph State Machine                    │ │
+│  │                                                         │ │
+│  │  fetch_busy → compute_slots → rank → verify → book     │ │
+│  │                                                         │ │
+│  │  7-factor slot scoring · race condition protection      │ │
+│  └───────────────────────────┬─────────────────────────────┘ │
+└──────────────────────────────┼───────────────────────────────┘
+                               ▼
+                  ┌─────────────────────────┐
+                  │   Google Calendar API   │
+                  │   OAuth 2.0 · FreeBusy  │
+                  │   Events · Meet Links   │
+                  └─────────────────────────┘
+```
 
 ## Tech Stack
 
@@ -115,12 +154,23 @@ CadenceAI/
 │   ├── tools/              # Schemas, handlers, calendar client
 │   ├── graph/              # LangGraph nodes, edges, state
 │   ├── utils/              # Slot ranker, time utils, audit log
-│   └── tests/              # pytest suite (~55 tests)
+│   └── tests/              # pytest suite (~150 tests)
 ├── web/                    # Next.js 16 frontend
 │   ├── src/components/     # Voice orb, calendar, captions
 │   ├── src/hooks/          # useTranscript, useMonthCalendar
-│   └── src/__tests__/      # vitest suite (~40 tests)
+│   └── src/__tests__/      # vitest suite (~120 tests)
 ├── extension/              # Chrome extension (side-panel)
 ├── Makefile                # make test / make install
 └── scripts/test.sh         # Shell test runner
 ```
+
+## Feature Checklist
+
+| Feature | Status | Details |
+|---|---|---|
+| Real-time voice conversation | ✅ | `server/bot.py` Pipecat voice pipeline with greeting on connect |
+| Collects name, date/time, and title | ✅ | 5-step conversation flow in `server/system_prompt.py` |
+| Confirms details before booking | ✅ | Confirmation step before calendar event creation |
+| Creates real Google Calendar events | ✅ | Google Calendar Events API via `server/tools/calendar_client.py` |
+| Live deployment | ✅ | [cadenceai.space](https://cadenceai.space) (Cloudflare Pages + Railway) |
+| Documentation | ✅ | Setup guide, calendar integration docs, screenshots, and [Loom demo](https://www.loom.com/share/3c18650f22c74fa394f5dd514271e187) |
