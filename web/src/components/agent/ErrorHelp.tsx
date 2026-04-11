@@ -16,7 +16,88 @@ interface ErrorInfo {
   action?: "reload" | "retry" | "auto-dismiss";
 }
 
+function classifyVoiceCode(code: string): ErrorInfo {
+  switch (code) {
+    case "insecure-context":
+      return {
+        title: "Voice needs HTTPS",
+        help: "Voice chat requires a secure connection. Reload the site over https:// and try again.",
+      };
+    case "mic-unsupported":
+      return {
+        title: "Voice not supported",
+        help: "This browser doesn't support microphone access. Try the latest Chrome, Firefox, or Safari.",
+      };
+    case "mic-denied":
+      return {
+        title: "Microphone blocked",
+        help: "Click the lock icon in the address bar, set Microphone to Allow, then reload the page.",
+        action: "reload",
+      };
+    case "mic-missing":
+      return {
+        title: "No microphone found",
+        help: "No input device detected. Plug in a mic and try again.",
+        action: "retry",
+      };
+    case "mic-busy":
+      return {
+        title: "Microphone in use",
+        help: "Another app (Zoom, Meet, Discord) is holding the mic. Close it and retry.",
+        action: "retry",
+      };
+    case "mic-failed":
+      return {
+        title: "Microphone error",
+        help: "Couldn't access the mic. Check your system audio settings and retry.",
+        action: "retry",
+      };
+    case "mixed-content":
+      return {
+        title: "Blocked by browser",
+        help: "Your browser is blocking the voice server because it's on an insecure address. The site needs to be served over HTTPS end-to-end.",
+      };
+    case "backend-unreachable":
+      return {
+        title: "Voice server offline",
+        help: "Can't reach the voice server. It may be down, or a browser extension (ad blocker, privacy tool) is blocking WebRTC. Try Incognito or disable extensions for this site.",
+        action: "retry",
+      };
+    case "connect-timeout":
+      return {
+        title: "Connection timed out",
+        help: "The voice server didn't respond in time. Check your connection and retry.",
+        action: "retry",
+      };
+    case "connect-timeout-chrome":
+      return {
+        title: "Chrome couldn't connect",
+        help: "Chrome blocked or timed out the voice call. Common fixes: (1) disable ad blockers for this site, (2) try Incognito mode, (3) check chrome://settings/content/microphone, or (4) try Firefox.",
+        action: "retry",
+      };
+    case "bad-url":
+      return {
+        title: "Voice misconfigured",
+        help: "The voice server URL is invalid. This is a configuration issue.",
+      };
+    case "no-window":
+    case "unknown":
+    default:
+      return {
+        title: "Voice error",
+        help: "Something went wrong connecting to voice chat.",
+        action: "retry",
+      };
+  }
+}
+
 function classifyError(error: string): ErrorInfo {
+  // Structured codes emitted by useVoiceAgent preflight + timeout.
+  // Checked first so they never collide with keyword matching below.
+  if (error.startsWith("VOICE_ERR:")) {
+    return classifyVoiceCode(error.slice("VOICE_ERR:".length));
+  }
+
   const lower = error.toLowerCase();
 
   if (lower.includes("mic") || lower.includes("notallowed") || lower.includes("permission")) {
