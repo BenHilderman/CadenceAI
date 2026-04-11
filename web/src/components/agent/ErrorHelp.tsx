@@ -80,6 +80,24 @@ function classifyVoiceCode(code: string): ErrorInfo {
         title: "Voice misconfigured",
         help: "The voice server URL is invalid. This is a configuration issue.",
       };
+    case "offline":
+      return {
+        title: "You're offline",
+        help: "Your internet connection dropped. Voice will auto-resume when you're back online.",
+        action: "auto-dismiss",
+      };
+    case "reconnect-failed":
+      return {
+        title: "Lost the connection",
+        help: "We tried to reconnect three times and couldn't. Try again, or switch to text chat below.",
+        action: "retry",
+      };
+    case "no-client":
+      return {
+        title: "Voice unavailable",
+        help: "Voice client isn't initialized yet. Reload the page and try again.",
+        action: "reload",
+      };
     case "no-window":
     case "unknown":
     default:
