@@ -136,6 +136,19 @@ export function VoiceAgent() {
   // Current error from any source
   const currentError = voiceError || textError || null;
 
+  // Route the ErrorHelp retry button to the right recovery action:
+  // voice-coded errors call connect() (re-dial the voice session), while
+  // text/other errors fall through to sending "Try again" into the text
+  // channel. Without this, voice failures would silently send a text message
+  // instead of actually retrying the voice connection.
+  const handleErrorRetry = useCallback(() => {
+    if (currentError?.startsWith("VOICE_ERR:")) {
+      connect();
+    } else {
+      sendMessage("Try again");
+    }
+  }, [currentError, connect, sendMessage]);
+
   const orbState = useMemo(
     () => deriveOrbState(transportState, isConnected, isConnecting, voiceMessages),
     [transportState, isConnected, isConnecting, voiceMessages]
@@ -265,7 +278,7 @@ export function VoiceAgent() {
 
       {/* Bottom controls — ErrorHelp + PromptHint + "Prefer to type?" / TextInput */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4 flex flex-col items-center gap-2">
-        <ErrorHelp error={currentError} onRetry={() => sendMessage("Try again")} />
+        <ErrorHelp error={currentError} onRetry={handleErrorRetry} />
 
         {/* Prompt hints — visible only pre-conversation */}
         <AnimatePresence>

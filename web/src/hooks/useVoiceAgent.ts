@@ -141,6 +141,10 @@ export function useVoiceAgent(sessionId?: string | null) {
   const userDisconnectedRef = useRef(false);
   const wasReadyRef = useRef(false);
   const currentUrlRef = useRef<string | null>(null);
+  // Guards against double-click racing two dial() attempts against each other.
+  const dialingRef = useRef(false);
+  // Flips false on unmount so async callbacks can bail before touching state.
+  const mountedRef = useRef(true);
 
   const isConnected = transportState === "ready";
   const isConnecting =
@@ -170,23 +174,36 @@ export function useVoiceAgent(sessionId?: string | null) {
   }, [isConnected]);
 
   // Shared dial sequence — used by initial connect AND reconnect, so the
-  // preflight/probe/timeout guards always apply on every attempt.
+  // preflight/probe/timeout guards always apply on every attempt. Guarded by
+  // dialingRef so re-entrant calls (e.g. rapid user click + auto-reconnect
+  // firing at the same moment) can't double-dial.
   const dial = useCallback(async (url: string) => {
     if (!client) throw new Error("VOICE_ERR:no-client");
-    setPhase("preflight");
-    await preflightMic();
-    setPhase("probing");
-    await probeBackend(url);
-    setPhase("connecting");
-    await withTimeout(
-      client.connect({ webrtcUrl: url }),
-      CONNECT_TIMEOUT_MS,
-      isChrome() ? "VOICE_ERR:connect-timeout-chrome" : "VOICE_ERR:connect-timeout"
-    );
+    if (dialingRef.current) return;
+    dialingRef.current = true;
+    try {
+      if (!mountedRef.current) return;
+      setPhase("preflight");
+      await preflightMic();
+      if (!mountedRef.current) return;
+      setPhase("probing");
+      await probeBackend(url);
+      if (!mountedRef.current) return;
+      setPhase("connecting");
+      await withTimeout(
+        client.connect({ webrtcUrl: url }),
+        CONNECT_TIMEOUT_MS,
+        isChrome() ? "VOICE_ERR:connect-timeout-chrome" : "VOICE_ERR:connect-timeout"
+      );
+    } finally {
+      dialingRef.current = false;
+    }
   }, [client]);
 
   const connect = useCallback(async () => {
     if (!client) return;
+    // Ignore re-entrant clicks while a dial is in flight.
+    if (dialingRef.current) return;
     // Fresh session — clear any stale reconnect state so a new click always
     // starts from zero and can't be mistaken for a continuation.
     userDisconnectedRef.current = false;
@@ -255,7 +272,11 @@ export function useVoiceAgent(sessionId?: string | null) {
       return;
     }
 
-    const delay = RECONNECT_BACKOFF_MS[reconnectAttempt] ?? 10000;
+    // Base backoff + up to 500ms jitter. Jitter matters when many clients
+    // reconnect simultaneously after a server blip — without it they'd all
+    // pound the server at the exact same millisecond.
+    const base = RECONNECT_BACKOFF_MS[reconnectAttempt] ?? 10000;
+    const delay = base + Math.floor(Math.random() * 500);
     setPhase("reconnecting");
 
     reconnectTimerRef.current = setTimeout(async () => {
@@ -322,6 +343,68 @@ export function useVoiceAgent(sessionId?: string | null) {
     return () => {
       navigator.mediaDevices.removeEventListener?.("devicechange", handler);
     };
+  }, []);
+
+  // Visibility change — when the user returns to a backgrounded tab, Chrome
+  // may have throttled the WebRTC connection into a zombie state that won't
+  // recover on its own. If we notice we were ready but aren't anymore, dial
+  // again immediately (skipping backoff, since user just refocused).
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const handler = () => {
+      if (document.visibilityState !== "visible") return;
+      if (userDisconnectedRef.current) return;
+      if (!wasReadyRef.current) return;
+      if (isConnected) return;
+      if (dialingRef.current) return;
+      const url = currentUrlRef.current;
+      if (!url) return;
+      setReconnectAttempt(0);
+      dial(url).catch((e) => {
+        if (!mountedRef.current) return;
+        setError(e instanceof Error ? e.message : "VOICE_ERR:unknown");
+      });
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, [isConnected, dial]);
+
+  // beforeunload — best-effort clean disconnect on tab close so the pipecat
+  // server can free the session instead of waiting for TCP keepalive timeout.
+  // Fire-and-forget; async work in beforeunload isn't reliable but disconnect()
+  // kicks off a close frame synchronously enough to usually reach the server.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => {
+      if (!client) return;
+      try {
+        client.disconnect();
+      } catch {
+        /* noop */
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [client]);
+
+  // Unmount cleanup — flip mountedRef so any in-flight dial() bails before
+  // touching state, clear any pending reconnect timer, and tear down the
+  // pipecat session so we don't leak a half-open WebRTC connection.
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      if (client) {
+        client.disconnect().catch(() => {});
+      }
+    };
+    // client intentionally omitted — we only want this to run once on unmount,
+    // not every time the client reference changes (which would tear down
+    // healthy sessions on re-renders).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
