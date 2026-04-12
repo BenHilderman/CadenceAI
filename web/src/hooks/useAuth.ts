@@ -38,13 +38,9 @@ export function useAuth(): AuthState {
     }
 
     if (!stored) {
-      // Auto-redirect to Google OAuth if we haven't tried yet
-      const alreadyAttempted = sessionStorage.getItem("cadence_auth_attempted");
-      if (!alreadyAttempted) {
-        sessionStorage.setItem("cadence_auth_attempted", "1");
-        window.location.href = `${API_URL}/api/auth/google`;
-        return; // Don't set isLoading false — we're redirecting
-      }
+      // No session — let the page render without auth. The voice assistant
+      // works in guest mode (can chat, just can't access Google Calendar).
+      // The user can connect their calendar later via the header button.
       setIsLoading(false);
       return;
     }
