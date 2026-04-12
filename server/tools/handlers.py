@@ -25,14 +25,25 @@ user_credentials_var: ContextVar[UserCredentials | None] = ContextVar(
     "user_credentials", default=None
 )
 
+# Explicit opt-in for server-level default credentials. Only trusted callers
+# (Slack bot, background jobs) set this True before invoking tools. The web
+# path NEVER sets it, so an unauthenticated guest can never accidentally
+# touch the server owner's personal Google Calendar via the .env defaults.
+# Without this gate, a Gemini model that ignores the "don't call tools"
+# preamble would silently book events on the wrong calendar.
+allow_server_default_creds: ContextVar[bool] = ContextVar(
+    "allow_server_default_creds", default=False
+)
+
 calendar_client: CalendarClient | None = None
 
 
 class CalendarAuthRequiredError(Exception):
     """Raised when a calendar operation is attempted without any valid
-    credentials — neither per-user OAuth tokens nor server-level defaults.
-    Handled upstream to surface a "connect your calendar" message to the user
-    instead of crashing the pipeline."""
+    per-user OAuth credentials AND the caller has not opted in to server
+    defaults. Handled upstream to surface a "connect your calendar" message
+    to the user instead of crashing the pipeline or leaking the server
+    owner's calendar to an unauthenticated guest."""
     pass
 
 
@@ -46,13 +57,22 @@ def get_calendar_client() -> CalendarClient:
             client_secret=creds.client_secret,
             calendar_id=creds.calendar_id,
         )
-    # No per-user creds — check if server-level defaults exist before trying
-    # to construct a CalendarClient with empty strings (which crashes at
-    # _refresh_credentials with a confusing RefreshError).
-    if not settings.google_refresh_token or not settings.google_client_id:
+
+    # No per-user creds. Server defaults are only usable by trusted callers
+    # that explicitly opted in (Slack agent). All web-originated calls leave
+    # the flag at its False default, so guest conversations never fall
+    # through to the server owner's calendar — even if the LLM ignores
+    # the system prompt and calls a tool.
+    if not allow_server_default_creds.get(False):
         raise CalendarAuthRequiredError(
             "No calendar credentials available. The user needs to connect their Google Calendar."
         )
+
+    if not settings.google_refresh_token or not settings.google_client_id:
+        raise CalendarAuthRequiredError(
+            "Server-level calendar credentials are not configured."
+        )
+
     global calendar_client
     if calendar_client is None:
         calendar_client = CalendarClient()

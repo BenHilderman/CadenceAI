@@ -99,7 +99,11 @@ export function AgentProvider({ children, sessionId = null }: { children: React.
       clearKeepAlive(transport);
       pipecatClient.disconnect().catch(() => {});
     };
-  }, []);
+    // Rebuild the client when sessionId changes (e.g., guest → authenticated
+    // after OAuth return). Without this, the client is stuck with the sessionId
+    // it had on first mount, so connecting calendar doesn't actually enable
+    // calendar access until a full page reload.
+  }, [sessionId]);
 
   if (!client) return null;
 

@@ -156,6 +156,12 @@ def execute_tool(name: str, args: dict) -> dict:
         input_state["event_id"] = args["event_id"]
         input_state["notify_attendees"] = args.get("notify_attendees", True)
 
+    # Slack runs under a single bot-level credential pair from .env. Opt in
+    # to the server-default fallback so calendar ops don't require per-user
+    # OAuth (which Slack doesn't currently wire up). The web path never
+    # sets this flag, so guest users remain isolated.
+    from tools.handlers import allow_server_default_creds, CalendarAuthRequiredError
+    token = allow_server_default_creds.set(True)
     try:
         state = _invoke_graph(input_state)
         result = state.get("result", {"error": "No result from graph"})
@@ -169,7 +175,6 @@ def execute_tool(name: str, args: dict) -> dict:
         return result
 
     except Exception as e:
-        from tools.handlers import CalendarAuthRequiredError
         if isinstance(e, CalendarAuthRequiredError):
             logger.info(f"Calendar auth required for tool {name} — user not signed in")
             return {
@@ -179,6 +184,8 @@ def execute_tool(name: str, args: dict) -> dict:
         logger.error(f"Tool execution error: {e}")
         audit_log.log(name, args, {"error": str(e)}, success=False)
         return {"error": str(e)}
+    finally:
+        allow_server_default_creds.reset(token)
 
 
 async def process_message(user_id: str, text: str) -> str:

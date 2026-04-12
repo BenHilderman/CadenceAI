@@ -47,7 +47,7 @@ export function VoiceAgent() {
   const sessionId = useSessionId();
   const { messages: voiceMessages } = useTranscript();
   const { entries: voiceEntries, slots: voiceSlots, bookedEvent: voiceBookedEvent, graphTrace, busyBlocks: voiceBusyBlocks } = useAuditLog();
-  const { connect, disconnect, isConnected, isConnecting, transportState, error: voiceError } = useVoiceAgent(sessionId);
+  const { connect, disconnect, isConnected, isConnecting, transportState, phase, error: voiceError } = useVoiceAgent(sessionId);
   const {
     messages: textMessages,
     isLoading: textLoading,
@@ -89,6 +89,59 @@ export function VoiceAgent() {
 
   // "Prefer to type?" toggle
   const [showTextInput, setShowTextInput] = useState(false);
+
+  // Pending intent across OAuth round-trip: if a guest says "book Monday at
+  // 3pm" and then clicks Connect Calendar, the page reloads and all conversation
+  // context is lost. We save their last meaningful utterance to sessionStorage
+  // so we can offer to replay it after they return authenticated.
+  const [pendingIntent, setPendingIntent] = useState<string | null>(null);
+
+  // On mount, check if there's a saved intent and we're now authenticated.
+  // If so, show it as a "Continue from where you left off?" prompt.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!sessionId) return; // only offer replay when authenticated
+    try {
+      const saved = sessionStorage.getItem("cadence_pending_intent");
+      if (saved && saved.length > 0) {
+        setPendingIntent(saved);
+      }
+    } catch {
+      /* sessionStorage can throw in private mode — ignore */
+    }
+  }, [sessionId]);
+
+  // Continuously save the latest meaningful user utterance to sessionStorage.
+  // We save *any* user message longer than 6 characters (filters out "yes",
+  // "no", "ok") so the last substantive request is available after a reload.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const lastUserMsg = [...messages]
+      .reverse()
+      .find((m) => m.role === "user" && (m.text?.length ?? 0) > 6);
+    if (!lastUserMsg?.text) return;
+    try {
+      sessionStorage.setItem("cadence_pending_intent", lastUserMsg.text);
+    } catch {
+      /* ignore */
+    }
+  }, [messages]);
+
+  const dismissPendingIntent = useCallback(() => {
+    setPendingIntent(null);
+    try {
+      sessionStorage.removeItem("cadence_pending_intent");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const resumePendingIntent = useCallback(() => {
+    if (!pendingIntent) return;
+    sendMessage(pendingIntent);
+    setShowTextInput(true); // surface the text panel so they can continue
+    dismissPendingIntent();
+  }, [pendingIntent, sendMessage, dismissPendingIntent]);
 
   // Pending slot booking state
   const [pendingSlotTime, setPendingSlotTime] = useState<string | null>(null);
@@ -203,10 +256,12 @@ export function VoiceAgent() {
         <AgentStatus activity={agentActivity} />
       </div>
 
-      {/* End call button — only during an active voice session. Calling
-          disconnect() flags userDisconnectedRef so auto-reconnect won't fire. */}
+      {/* End call button — only visible once we're actually fully connected
+          ("ready" phase), not during preflight/probing/connecting. Showing it
+          earlier let users click End before there was a connection to end,
+          which leaked in-flight getUserMedia prompts past the cancel point. */}
       <AnimatePresence>
-        {(isConnected || isConnecting) && (
+        {phase === "ready" && (
           <motion.button
             key="end-call"
             initial={{ opacity: 0, y: 8 }}
@@ -299,6 +354,44 @@ export function VoiceAgent() {
       {/* Bottom controls — ErrorHelp + PromptHint + "Prefer to type?" / TextInput */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4 flex flex-col items-center gap-2">
         <ErrorHelp error={currentError} onRetry={handleErrorRetry} />
+
+        {/* Pending intent banner — only shown after OAuth return when we have
+            a saved utterance from the pre-auth conversation. One click sends
+            it to the now-authenticated bot so the user doesn't have to repeat
+            themselves. */}
+        <AnimatePresence>
+          {pendingIntent && (
+            <motion.div
+              key="pending-intent"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.25 }}
+              className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 backdrop-blur-sm"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-emerald-300 font-medium mb-1">Welcome back — want to continue?</p>
+                  <p className="text-xs text-muted truncate">&ldquo;{pendingIntent}&rdquo;</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={resumePendingIntent}
+                    className="text-[10px] font-mono uppercase tracking-wider text-emerald-200 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-full px-2.5 py-1 transition-colors"
+                  >
+                    Continue
+                  </button>
+                  <button
+                    onClick={dismissPendingIntent}
+                    className="text-[10px] font-mono uppercase tracking-wider text-muted hover:text-foreground transition-colors px-2 py-1"
+                  >
+                    Skip
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Prompt hints — visible only pre-conversation */}
         <AnimatePresence>
