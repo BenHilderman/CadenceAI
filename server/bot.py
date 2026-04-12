@@ -44,11 +44,19 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, user_creds: UserCred
 
     llm = GeminiLiveLLMService(
         api_key=settings.google_api_key,
-        model="models/gemini-2.5-flash-native-audio-preview-12-2025",
+        # Use the -latest alias instead of a dated preview. Google rotates
+        # preview tags every ~3 months; latest follows the current GA-quality
+        # native-audio model automatically so we don't get silent failures
+        # when a preview is retired.
+        model="models/gemini-2.5-flash-native-audio-latest",
         voice_id="Puck",
         system_instruction=get_system_prompt(is_authenticated=is_authenticated),
         tools=scheduling_tools,
         params=InputParams(language=Language.EN_US),
+    )
+    logger.info(
+        f"Gemini Live configured (authenticated={is_authenticated}, "
+        f"prompt_len={len(get_system_prompt(is_authenticated=is_authenticated))})"
     )
 
     register_all_handlers(llm)
@@ -85,15 +93,23 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, user_creds: UserCred
     async def on_connected(transport_self, conn):
         nonlocal connected
         if connected:
+            logger.debug("on_client_connected re-fired — already handled, skipping")
             return
         connected = True
-        logger.info("Client connected")
-        await conn.connect()
-        # Trigger the LLM to greet the user immediately
-        await task.queue_frames([LLMMessagesUpdateFrame(
-            messages=[{"role": "user", "content": "Hello"}],
-            run_llm=True,
-        )])
+        logger.info(f"Client connected (pc_id={getattr(conn, 'pc_id', '?')}) — kicking off greeting")
+        try:
+            await conn.connect()
+            # Trigger the LLM to greet the user immediately.
+            await task.queue_frames([LLMMessagesUpdateFrame(
+                messages=[{"role": "user", "content": "Hello"}],
+                run_llm=True,
+            )])
+            logger.info("Greeting frame queued")
+        except Exception as e:
+            # If this path fails silently, the user sees 'Listening' forever
+            # with no bot audio. Log the exception explicitly so Railway logs
+            # surface it instead of a silent hang.
+            logger.exception(f"Failed to kick off greeting: {e}")
 
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport_self, conn):
