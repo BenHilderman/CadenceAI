@@ -189,7 +189,8 @@ def book_event(state: SchedulingState) -> SchedulingState:
         return {"result": {"success": True, "event": event}}
 
     except HttpError as e:
-        if hasattr(e, 'resp') and e.resp.status == 409:
+        status = e.resp.status if hasattr(e, 'resp') else 0
+        if status == 409:
             logger.warning(f"book_event: 409 conflict for {state['start_time']}")
             return {
                 "error": "This time slot was just taken by another event. Let me find alternatives.",
@@ -197,6 +198,16 @@ def book_event(state: SchedulingState) -> SchedulingState:
                     "success": False,
                     "error": "conflict",
                     "message": "The slot was taken between verification and booking. Please check availability again.",
+                },
+            }
+        if status == 401:
+            logger.warning(f"book_event: 401 auth error for {state['start_time']}")
+            return {
+                "error": "Calendar authentication expired. Please reconnect your Google Calendar.",
+                "result": {
+                    "success": False,
+                    "error": "auth_expired",
+                    "message": "Calendar authentication expired.",
                 },
             }
         raise

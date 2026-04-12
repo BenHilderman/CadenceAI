@@ -169,6 +169,13 @@ def execute_tool(name: str, args: dict) -> dict:
         return result
 
     except Exception as e:
+        from tools.handlers import CalendarAuthRequiredError
+        if isinstance(e, CalendarAuthRequiredError):
+            logger.info(f"Calendar auth required for tool {name} — user not signed in")
+            return {
+                "error": "auth_required",
+                "message": "No calendar credentials available. The user needs to connect their Google Calendar by clicking Connect Calendar in the top-right corner.",
+            }
         logger.error(f"Tool execution error: {e}")
         audit_log.log(name, args, {"error": str(e)}, success=False)
         return {"error": str(e)}

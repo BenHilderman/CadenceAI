@@ -28,6 +28,14 @@ user_credentials_var: ContextVar[UserCredentials | None] = ContextVar(
 calendar_client: CalendarClient | None = None
 
 
+class CalendarAuthRequiredError(Exception):
+    """Raised when a calendar operation is attempted without any valid
+    credentials — neither per-user OAuth tokens nor server-level defaults.
+    Handled upstream to surface a "connect your calendar" message to the user
+    instead of crashing the pipeline."""
+    pass
+
+
 def get_calendar_client() -> CalendarClient:
     creds = user_credentials_var.get(None)
     if creds is not None:
@@ -37,6 +45,13 @@ def get_calendar_client() -> CalendarClient:
             client_id=creds.client_id,
             client_secret=creds.client_secret,
             calendar_id=creds.calendar_id,
+        )
+    # No per-user creds — check if server-level defaults exist before trying
+    # to construct a CalendarClient with empty strings (which crashes at
+    # _refresh_credentials with a confusing RefreshError).
+    if not settings.google_refresh_token or not settings.google_client_id:
+        raise CalendarAuthRequiredError(
+            "No calendar credentials available. The user needs to connect their Google Calendar."
         )
     global calendar_client
     if calendar_client is None:
@@ -89,9 +104,16 @@ def _invoke_graph_with_trace(input_state: dict) -> tuple[dict, list[dict]]:
 
 
 async def _invoke_with_retry(input_state: dict) -> tuple[dict, list[dict]]:
-    """Invoke graph with a single retry on auth-related failures."""
+    """Invoke graph with a single retry on auth-related failures.
+
+    CalendarAuthRequiredError short-circuits immediately — retrying without
+    credentials is pointless. The error bubbles into the handler's except
+    block which surfaces a structured auth_required response to the LLM.
+    """
     try:
         return await asyncio.to_thread(_invoke_graph_with_trace, input_state)
+    except CalendarAuthRequiredError:
+        raise  # No retry — there are no creds to retry with
     except Exception as e:
         error_msg = str(e).lower()
         if any(keyword in error_msg for keyword in ["401", "token", "credentials", "auth", "refresh"]):
@@ -225,6 +247,8 @@ async def handle_cancel_event(params: FunctionCallParams):
 
 def _classify_error(e: Exception) -> str:
     """Classify an error into a code for structured responses."""
+    if isinstance(e, CalendarAuthRequiredError):
+        return "auth_required"
     msg = str(e).lower()
     if "401" in msg or "auth" in msg or "token" in msg:
         return "auth_expired"
