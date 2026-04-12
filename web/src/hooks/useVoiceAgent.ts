@@ -145,6 +145,11 @@ export function useVoiceAgent(sessionId?: string | null) {
   const dialingRef = useRef(false);
   // Flips false on unmount so async callbacks can bail before touching state.
   const mountedRef = useRef(true);
+  // Becomes true the moment we observe transportState === "disconnecting",
+  // which signals a CLEAN shutdown (either user hit hangup or the bot ended
+  // the call). Distinguishes intentional ends from network-drop surprises so
+  // the auto-reconnect watcher doesn't re-dial a conversation that ended.
+  const intentionalEndRef = useRef(false);
 
   const isConnected = transportState === "ready";
   const isConnecting =
@@ -172,6 +177,18 @@ export function useVoiceAgent(sessionId?: string | null) {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isConnected]);
+
+  // Watch for the "disconnecting" transport state — this is the only signal
+  // we get that differentiates a clean shutdown (user hangup OR bot said
+  // goodbye) from an unexpected drop (network dies, server crashes).
+  // SmallWebRTCTransport emits "disconnecting" during graceful teardown and
+  // jumps straight to "disconnected" on a crash. Record the signal here so
+  // the reconnect watcher can skip the re-dial.
+  useEffect(() => {
+    if (transportState === "disconnecting") {
+      intentionalEndRef.current = true;
+    }
+  }, [transportState]);
 
   // Shared dial sequence — used by initial connect AND reconnect, so the
   // preflight/probe/timeout guards always apply on every attempt. Guarded by
@@ -208,6 +225,7 @@ export function useVoiceAgent(sessionId?: string | null) {
     // starts from zero and can't be mistaken for a continuation.
     userDisconnectedRef.current = false;
     wasReadyRef.current = false;
+    intentionalEndRef.current = false;
     setReconnectAttempt(0);
     setError(null);
 
@@ -255,10 +273,15 @@ export function useVoiceAgent(sessionId?: string | null) {
 
   // Auto-reconnect watcher: if transport drops after we successfully reached
   // "ready", try to reconnect with exponential backoff up to MAX_RECONNECT_ATTEMPTS.
+  // Skipped when the disconnect was INTENTIONAL — either user-initiated
+  // (userDisconnectedRef) or cleanly shut down by either peer (intentionalEndRef
+  // flips when we observe the "disconnecting" transport state). Without this
+  // check, the bot saying "goodbye" would immediately relaunch the call.
   useEffect(() => {
     const dropped =
       wasReadyRef.current &&
       !userDisconnectedRef.current &&
+      !intentionalEndRef.current &&
       (transportState === "disconnected" || transportState === "error");
 
     if (!dropped) return;
@@ -305,6 +328,7 @@ export function useVoiceAgent(sessionId?: string | null) {
 
     const handleOnline = () => {
       if (userDisconnectedRef.current) return;
+      if (intentionalEndRef.current) return;
       if (!wasReadyRef.current) return;
       if (isConnected) return;
       const url = currentUrlRef.current;
@@ -354,6 +378,7 @@ export function useVoiceAgent(sessionId?: string | null) {
     const handler = () => {
       if (document.visibilityState !== "visible") return;
       if (userDisconnectedRef.current) return;
+      if (intentionalEndRef.current) return;
       if (!wasReadyRef.current) return;
       if (isConnected) return;
       if (dialingRef.current) return;

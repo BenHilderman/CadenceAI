@@ -22,7 +22,7 @@ import { LiveCaptions } from "./LiveCaptions";
 import type { AgentActivity } from "./AgentStatus";
 import { ErrorHelp } from "./ErrorHelp";
 import { MonthCalendar } from "./MonthCalendar";
-import { Keyboard } from "lucide-react";
+import { Keyboard, PhoneOff } from "lucide-react";
 import type { Slot } from "@/lib/types";
 
 function deriveOrbState(
@@ -47,7 +47,7 @@ export function VoiceAgent() {
   const sessionId = useSessionId();
   const { messages: voiceMessages } = useTranscript();
   const { entries: voiceEntries, slots: voiceSlots, bookedEvent: voiceBookedEvent, graphTrace, busyBlocks: voiceBusyBlocks } = useAuditLog();
-  const { connect, isConnected, isConnecting, transportState, error: voiceError } = useVoiceAgent(sessionId);
+  const { connect, disconnect, isConnected, isConnecting, transportState, error: voiceError } = useVoiceAgent(sessionId);
   const {
     messages: textMessages,
     isLoading: textLoading,
@@ -202,6 +202,26 @@ export function VoiceAgent() {
       <div className="absolute top-[calc(50%_+_180px)] left-1/2 -translate-x-1/2 z-10">
         <AgentStatus activity={agentActivity} />
       </div>
+
+      {/* End call button — only during an active voice session. Calling
+          disconnect() flags userDisconnectedRef so auto-reconnect won't fire. */}
+      <AnimatePresence>
+        {(isConnected || isConnecting) && (
+          <motion.button
+            key="end-call"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            onClick={disconnect}
+            className="absolute top-[calc(50%_+_230px)] left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 hover:text-red-200 text-xs font-mono uppercase tracking-wider transition-colors"
+            aria-label="End call"
+          >
+            <PhoneOff size={12} />
+            End call
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* TranscriptPanel — left HUD */}
       <div className="hidden lg:block absolute left-4 top-16 bottom-4 w-[340px] z-20 glass-hud opacity-90 hover:opacity-100 transition-opacity overflow-hidden rounded-2xl">
