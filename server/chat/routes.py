@@ -42,14 +42,17 @@ class ChatResponse(BaseModel):
     busy_times: list[dict] | None = None
 
 
-def _get_text_system_prompt() -> str:
-    return get_system_prompt() + TEXT_ADDENDUM
+def _get_text_system_prompt(is_authenticated: bool = True) -> str:
+    return get_system_prompt(is_authenticated=is_authenticated) + TEXT_ADDENDUM
 
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest, request: Request):
-    # Set per-user credentials if session provided
+    # Set per-user credentials if session provided. is_authenticated flips
+    # true ONLY when we successfully loaded user creds — not merely when a
+    # session query param was present but invalid/expired.
     session_id = request.query_params.get("session")
+    is_authenticated = False
     if session_id:
         user_session = get_session(session_id)
         if user_session:
@@ -59,6 +62,7 @@ async def chat(req: ChatRequest, request: Request):
                 client_id=settings.google_client_id,
                 client_secret=settings.google_client_secret,
             ))
+            is_authenticated = True
 
     genai.configure(api_key=settings.google_api_key)
 
@@ -69,7 +73,7 @@ async def chat(req: ChatRequest, request: Request):
 
     model = genai.GenerativeModel(
         model_name="gemini-2.5-flash",
-        system_instruction=_get_text_system_prompt(),
+        system_instruction=_get_text_system_prompt(is_authenticated=is_authenticated),
         tools=SCHEDULING_TOOLS,
     )
 

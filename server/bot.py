@@ -36,11 +36,17 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, user_creds: UserCred
         ),
     )
 
+    # Tell the prompt whether the user has connected their calendar.
+    # Guest mode changes the flow: bot collects name/date/time, then pauses
+    # at the check_availability checkpoint to prompt for Connect Calendar
+    # instead of calling a tool that would fail.
+    is_authenticated = user_creds is not None
+
     llm = GeminiLiveLLMService(
         api_key=settings.google_api_key,
         model="models/gemini-2.5-flash-native-audio-preview-12-2025",
         voice_id="Puck",
-        system_instruction=get_system_prompt(),
+        system_instruction=get_system_prompt(is_authenticated=is_authenticated),
         tools=scheduling_tools,
         params=InputParams(language=Language.EN_US),
     )
